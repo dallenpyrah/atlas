@@ -91,7 +91,7 @@ export const auth = betterAuth({
         disabled: false,
       },
     }),
-    polarPlugin
+    ...(polarPlugin ? [polarPlugin] : []),
   ],
 })
 
