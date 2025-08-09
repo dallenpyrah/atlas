@@ -18,6 +18,8 @@ const envSchema = z.object({
   QSTASH_CURRENT_SIGNING_KEY: z.string().optional(),
   QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
   UPSTASH_DISABLE_TELEMETRY: z.string().optional(),
+
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
 })
 
 type Env = z.infer<typeof envSchema>
