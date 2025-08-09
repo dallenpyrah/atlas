@@ -3,8 +3,10 @@ import { Polar } from '@polar-sh/sdk'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { organization } from 'better-auth/plugins'
+import { nextCookies } from 'better-auth/next-js'
 import { db } from './db'
 import * as schema from './db/schema'
+import { resendClient } from '@/lib/resend'
 
 const polarClient = process.env.POLAR_ACCESS_TOKEN
   ? new Polar({
@@ -57,6 +59,24 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
+    sendResetPassword: async ({ user, url }, _request) => {
+      try {
+        await resendClient.emails.send({
+          from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+          to: user.email,
+          subject: 'Reset your password',
+          html: `
+            <p>Hello${user.name ? ` ${user.name}` : ''},</p>
+            <p>You requested a password reset. Click the link below to set a new password:</p>
+            <p><a href="${url}">Reset your password</a></p>
+            <p>If you did not request this, you can safely ignore this email.</p>
+          `,
+        })
+      } catch (error) {
+        console.error('Failed to send reset password email:', error)
+        throw error
+      }
+    },
   },
 
   socialProviders: {
@@ -92,6 +112,8 @@ export const auth = betterAuth({
       },
     }),
     ...(polarPlugin ? [polarPlugin] : []),
+    // Keep this last to let Next.js manage cookies for server actions
+    nextCookies(),
   ],
 })
 
