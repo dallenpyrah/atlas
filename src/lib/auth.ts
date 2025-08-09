@@ -1,8 +1,41 @@
+import { checkout, polar, portal, usage, webhooks } from '@polar-sh/better-auth'
+import { Polar } from '@polar-sh/sdk'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { organization } from 'better-auth/plugins'
 import { db } from './db'
 import * as schema from './db/schema'
+
+const polarClient = process.env.POLAR_ACCESS_TOKEN
+  ? new Polar({
+      accessToken: process.env.POLAR_ACCESS_TOKEN,
+      server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
+    })
+  : undefined
+
+const polarPlugin = polarClient
+  ? polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      use: [
+        checkout({
+          authenticatedUsersOnly: true,
+          successUrl: '/dashboard?checkout_id={CHECKOUT_ID}',
+        }),
+        portal(),
+        usage(),
+        webhooks({
+          secret: process.env.POLAR_WEBHOOK_SECRET || '',
+          onCustomerStateChanged: async (payload) => {
+            console.log('Customer state changed:', payload)
+          },
+          onOrderPaid: async (payload) => {
+            console.log('Order paid:', payload)
+          },
+        }),
+      ],
+    })
+  : undefined
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -58,6 +91,7 @@ export const auth = betterAuth({
         disabled: false,
       },
     }),
+    polarPlugin
   ],
 })
 
