@@ -64,10 +64,51 @@ export const subscription = pgTable('subscription', {
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
 
+export const organization = pgTable('organization', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').unique(),
+  logo: text('logo'),
+  metadata: text('metadata'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const member = pgTable('member', {
+  id: text('id').primaryKey(),
+  organizationId: text('organizationId')
+    .notNull()
+    .references(() => organization.id),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id),
+  role: text('role').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const invitation = pgTable('invitation', {
+  id: text('id').primaryKey(),
+  organizationId: text('organizationId')
+    .notNull()
+    .references(() => organization.id),
+  email: text('email').notNull(),
+  role: text('role'),
+  status: text('status').notNull(),
+  invitedBy: text('invitedBy')
+    .notNull()
+    .references(() => user.id),
+  expiresAt: timestamp('expiresAt').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
   subscriptions: many(subscription),
+  members: many(member),
+  invitations: many(invitation),
 }))
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -87,6 +128,33 @@ export const accountRelations = relations(account, ({ one }) => ({
 export const subscriptionRelations = relations(subscription, ({ one }) => ({
   user: one(user, {
     fields: [subscription.userId],
+    references: [user.id],
+  }),
+}))
+
+export const organizationRelations = relations(organization, ({ many }) => ({
+  members: many(member),
+  invitations: many(invitation),
+}))
+
+export const memberRelations = relations(member, ({ one }) => ({
+  organization: one(organization, {
+    fields: [member.organizationId],
+    references: [organization.id],
+  }),
+  user: one(user, {
+    fields: [member.userId],
+    references: [user.id],
+  }),
+}))
+
+export const invitationRelations = relations(invitation, ({ one }) => ({
+  organization: one(organization, {
+    fields: [invitation.organizationId],
+    references: [organization.id],
+  }),
+  invitedBy: one(user, {
+    fields: [invitation.invitedBy],
     references: [user.id],
   }),
 }))

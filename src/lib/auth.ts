@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { organization } from 'better-auth/plugins'
 import { db } from './db'
 import * as schema from './db/schema'
 
@@ -11,6 +12,9 @@ export const auth = betterAuth({
       session: schema.session,
       account: schema.account,
       verification: schema.verification,
+      organization: schema.organization,
+      member: schema.member,
+      invitation: schema.invitation,
     },
   }),
 
@@ -46,6 +50,15 @@ export const auth = betterAuth({
       },
     },
   },
+
+  plugins: [
+    organization({
+      allowUserToCreateOrganization: true,
+      organizationDeletion: {
+        disabled: false,
+      },
+    }),
+  ],
 })
 
 export type Session = typeof auth.$Infer.Session
