@@ -31,5 +31,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/cache-example/:path*', '/api/vector-search/:path*', '/api/queue-job/:path*'],
+  matcher: ['/api/:path*'],
 }

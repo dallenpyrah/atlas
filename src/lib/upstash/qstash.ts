@@ -1,10 +1,11 @@
 import { Client } from '@upstash/qstash'
+import { env } from '@/lib/env'
 
 let qstash: Client | null = null
 
-if (process.env.QSTASH_TOKEN) {
+if (env.QSTASH_TOKEN) {
   qstash = new Client({
-    token: process.env.QSTASH_TOKEN,
+    token: env.QSTASH_TOKEN,
   })
 }
 
