@@ -1,4 +1,4 @@
-import { put, list, del, head, copy } from '@vercel/blob'
+import { copy, del, head, list, put } from '@vercel/blob'
 
 export { put, list, del, head, copy }
 
