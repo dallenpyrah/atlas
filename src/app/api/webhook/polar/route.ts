@@ -3,10 +3,24 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { subscription } from '@/lib/db/schema'
 
+interface SubscriptionWebhookData {
+  id: string
+  status: string
+  product_id: string
+  price_id?: string
+  current_period_start: string
+  current_period_end: string
+  canceled_at?: string
+  metadata?: {
+    userId?: string
+  }
+}
+
 export const POST = Webhooks({
   webhookSecret: process.env.POLAR_WEBHOOK_SECRET || '',
   onSubscriptionCreated: async (data: unknown) => {
-    const subscriptionData = (data as { data?: any }).data || (data as any)
+    const subscriptionData =
+      (data as { data?: SubscriptionWebhookData }).data || (data as SubscriptionWebhookData)
     await db.insert(subscription).values({
       id: crypto.randomUUID(),
       userId: subscriptionData.metadata?.userId as string,
@@ -19,7 +33,8 @@ export const POST = Webhooks({
     })
   },
   onSubscriptionUpdated: async (data: unknown) => {
-    const subscriptionData = (data as { data?: any }).data || (data as any)
+    const subscriptionData =
+      (data as { data?: SubscriptionWebhookData }).data || (data as SubscriptionWebhookData)
     await db
       .update(subscription)
       .set({
