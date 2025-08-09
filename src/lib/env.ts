@@ -22,6 +22,8 @@ const envSchema = z.object({
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
 
   XAI_API_KEY: z.string().optional(),
+  EXA_API_KEY: z.string().optional(),
+  AI_GATEWAY_API_KEY: z.string().optional(),
 })
 
 type Env = z.infer<typeof envSchema>
