@@ -22,16 +22,9 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarGroup,
-  SidebarSeparator,
 } from '@/components/ui/sidebar'
-import { Separator } from '@/components/ui/separator'
 
 const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
   chatHistory: [
     { id: '1', title: 'Project Planning Discussion', date: '2 hours ago' },
     { id: '2', title: 'API Integration Help', date: 'Yesterday' },
@@ -112,7 +105,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   )

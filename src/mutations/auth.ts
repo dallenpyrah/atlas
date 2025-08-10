@@ -207,3 +207,27 @@ export function useSignInSocialMutation(
     ...mergedOptions,
   })
 }
+
+export function useSignOutMutation(
+  options?: UseMutationOptions<unknown, Error, void>,
+) {
+  const mergedOptions: UseMutationOptions<unknown, Error, void> = {
+    ...(options || {}),
+    onSuccess: (data, variables, ctx) => {
+      toast.success('Signed out')
+      options?.onSuccess?.(data, variables, ctx)
+    },
+    onError: (error, variables, ctx) => {
+      toast.error(error.message || 'Failed to sign out')
+      options?.onError?.(error, variables, ctx)
+    },
+  }
+  return useMutation<unknown, Error, void>({
+    mutationKey: ['auth', 'sign-out'],
+    mutationFn: async () => {
+      const { error } = await authClient.signOut()
+      if (error) throw new Error(error.message)
+    },
+    ...mergedOptions,
+  })
+}
