@@ -1,12 +1,13 @@
-"use client"
-import * as React from "react"
-import Link from "next/link"
-import type { Route } from "next"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useRequestPasswordResetMutation } from "@/mutations/auth"
+'use client'
+import * as React from 'react'
+import type { Route } from 'next'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useRequestPasswordResetMutation } from '@/mutations/auth'
+import { AtlasBadge } from '@/components/atlas-badge'
+import Link from 'next/link'
 
 export default function ForgotPasswordPage({
   searchParams,
@@ -16,7 +17,7 @@ export default function ForgotPasswordPage({
   const router = useRouter()
   const [error, setError] = React.useState<string | null>(null)
   const reqReset = useRequestPasswordResetMutation({
-    onSuccess: () => router.replace("/forgot-password?sent=1" as any),
+    onSuccess: () => router.replace('/forgot-password?sent=1' as any),
     onError: (e) => setError(e.message),
   })
 
@@ -24,19 +25,14 @@ export default function ForgotPasswordPage({
     event.preventDefault()
     setError(null)
     const formData = new FormData(event.currentTarget)
-    const email = String(formData.get("email") || "").trim()
-    reqReset.mutate({ email, redirectTo: "/reset-password" })
+    const email = String(formData.get('email') || '').trim()
+    reqReset.mutate({ email, redirectTo: '/reset-password' })
   }
 
   return (
     <div className="min-h-svh flex flex-col">
       <div className="flex justify-center gap-2 p-6 md:p-10 md:justify-start">
-        <Link href="/" className="flex items-center gap-2 font-medium">
-          <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-            <span className="text-xs">A</span>
-          </div>
-          Atlas
-        </Link>
+        <AtlasBadge />
       </div>
       <div className="flex flex-1 items-center justify-center p-6">
         <form className="flex w-full max-w-sm flex-col gap-6" onSubmit={handleSubmit}>
@@ -53,15 +49,17 @@ export default function ForgotPasswordPage({
             </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             {searchParams?.sent === '1' ? (
-              <p className="text-sm text-green-600">If an account exists for that email, a reset link has been sent.</p>
+              <p className="text-sm text-green-600">
+                If an account exists for that email, a reset link has been sent.
+              </p>
             ) : null}
             <Button type="submit" className="w-full" disabled={reqReset.isPending}>
               Send reset link
             </Button>
           </div>
           <div className="text-center text-sm">
-            Remembered it?{" "}
-            <Link href={"/login" as Route} className="underline underline-offset-4">
+            Remembered it?{' '}
+            <Link href={'/login' as Route} className="underline underline-offset-4">
               Back to login
             </Link>
           </div>
@@ -70,5 +68,3 @@ export default function ForgotPasswordPage({
     </div>
   )
 }
-
-

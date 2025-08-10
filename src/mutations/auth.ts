@@ -1,7 +1,7 @@
-"use client"
-import { useMutation, type UseMutationOptions } from "@tanstack/react-query"
-import { authClient } from "@/lib/auth-client"
-import { toast } from "sonner"
+'use client'
+import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import { authClient } from '@/lib/auth-client'
+import { toast } from 'sonner'
 
 type SignInVariables = {
   email: string
@@ -28,29 +28,50 @@ type ResetPasswordVariables = {
   token: string
 }
 
+type SocialSignInVariables = {
+  provider: string
+  callbackURL?: string
+  errorCallbackURL?: string
+  newUserCallbackURL?: string
+  disableRedirect?: boolean
+}
+
+function getProviderLabel(provider: string): string {
+  const id = provider.toLowerCase()
+  if (id === 'github') return 'GitHub'
+  if (id === 'google') return 'Google'
+  if (id === 'twitter' || id === 'x') return 'X'
+  return id.charAt(0).toUpperCase() + id.slice(1)
+}
+
 export function useSignInEmailMutation(
   options?: UseMutationOptions<unknown, Error, SignInVariables>,
 ) {
   const mergedOptions: UseMutationOptions<unknown, Error, SignInVariables> = {
     ...(options || {}),
     onSuccess: (data, variables, ctx) => {
-      toast.success("Signed in")
+      toast.success('Signed in')
       options?.onSuccess?.(data, variables, ctx)
     },
     onError: (error, variables, ctx) => {
-      toast.error(error.message || "Failed to sign in")
+      toast.error(error.message || 'Failed to sign in')
       options?.onError?.(error, variables, ctx)
     },
   }
   return useMutation<unknown, Error, SignInVariables>({
-    mutationKey: ["auth", "sign-in", "email"],
+    mutationKey: ['auth', 'sign-in', 'email'],
     mutationFn: async ({ email, password, callbackURL, rememberMe }: SignInVariables) => {
-      const payload: { email: string; password: string; callbackURL?: string; rememberMe?: boolean } = {
+      const payload: {
+        email: string
+        password: string
+        callbackURL?: string
+        rememberMe?: boolean
+      } = {
         email,
         password,
       }
-      if (typeof callbackURL === "string") payload.callbackURL = callbackURL
-      if (typeof rememberMe === "boolean") payload.rememberMe = rememberMe
+      if (typeof callbackURL === 'string') payload.callbackURL = callbackURL
+      if (typeof rememberMe === 'boolean') payload.rememberMe = rememberMe
       const { data, error } = await authClient.signIn.email(payload)
       if (error) throw new Error(error.message)
       return data
@@ -65,24 +86,30 @@ export function useSignUpEmailMutation(
   const mergedOptions: UseMutationOptions<unknown, Error, SignUpVariables> = {
     ...(options || {}),
     onSuccess: (data, variables, ctx) => {
-      toast.success("Account created")
+      toast.success('Account created')
       options?.onSuccess?.(data, variables, ctx)
     },
     onError: (error, variables, ctx) => {
-      toast.error(error.message || "Failed to sign up")
+      toast.error(error.message || 'Failed to sign up')
       options?.onError?.(error, variables, ctx)
     },
   }
   return useMutation<unknown, Error, SignUpVariables>({
-    mutationKey: ["auth", "sign-up", "email"],
+    mutationKey: ['auth', 'sign-up', 'email'],
     mutationFn: async ({ email, password, name, image, callbackURL }: SignUpVariables) => {
-      const payload: { email: string; password: string; name: string; image?: string; callbackURL?: string } = {
+      const payload: {
+        email: string
+        password: string
+        name: string
+        image?: string
+        callbackURL?: string
+      } = {
         email,
         password,
         name,
       }
-      if (typeof image === "string" && image) payload.image = image
-      if (typeof callbackURL === "string") payload.callbackURL = callbackURL
+      if (typeof image === 'string' && image) payload.image = image
+      if (typeof callbackURL === 'string') payload.callbackURL = callbackURL
       const { data, error } = await authClient.signUp.email(payload)
       if (error) throw new Error(error.message)
       return data
@@ -97,17 +124,20 @@ export function useRequestPasswordResetMutation(
   const mergedOptions: UseMutationOptions<unknown, Error, RequestPasswordResetVariables> = {
     ...(options || {}),
     onSuccess: (data, variables, ctx) => {
-      toast.success("If an account exists, a reset email was sent")
+      toast.success('If an account exists, a reset email was sent')
       options?.onSuccess?.(data, variables, ctx)
     },
     onError: (error, variables, ctx) => {
-      toast.error(error.message || "Failed to request reset")
+      toast.error(error.message || 'Failed to request reset')
       options?.onError?.(error, variables, ctx)
     },
   }
   return useMutation<unknown, Error, RequestPasswordResetVariables>({
-    mutationKey: ["auth", "password", "request-reset"],
-    mutationFn: async ({ email, redirectTo = "/reset-password" }: RequestPasswordResetVariables) => {
+    mutationKey: ['auth', 'password', 'request-reset'],
+    mutationFn: async ({
+      email,
+      redirectTo = '/reset-password',
+    }: RequestPasswordResetVariables) => {
       const { data, error } = await authClient.requestPasswordReset({ email, redirectTo })
       if (error) throw new Error(error.message)
       return data
@@ -122,16 +152,16 @@ export function useResetPasswordMutation(
   const mergedOptions: UseMutationOptions<unknown, Error, ResetPasswordVariables> = {
     ...(options || {}),
     onSuccess: (data, variables, ctx) => {
-      toast.success("Password updated")
+      toast.success('Password updated')
       options?.onSuccess?.(data, variables, ctx)
     },
     onError: (error, variables, ctx) => {
-      toast.error(error.message || "Failed to reset password")
+      toast.error(error.message || 'Failed to reset password')
       options?.onError?.(error, variables, ctx)
     },
   }
   return useMutation<unknown, Error, ResetPasswordVariables>({
-    mutationKey: ["auth", "password", "reset"],
+    mutationKey: ['auth', 'password', 'reset'],
     mutationFn: async ({ newPassword, token }: ResetPasswordVariables) => {
       const { data, error } = await authClient.resetPassword({ newPassword, token })
       if (error) throw new Error(error.message)
@@ -141,4 +171,39 @@ export function useResetPasswordMutation(
   })
 }
 
-
+export function useSignInSocialMutation(
+  options?: UseMutationOptions<unknown, Error, SocialSignInVariables>,
+) {
+  const mergedOptions: UseMutationOptions<unknown, Error, SocialSignInVariables> = {
+    ...(options || {}),
+    onMutate: async (variables) => {
+      toast.message(`Redirecting to ${getProviderLabel(variables.provider)}…`)
+      if (options?.onMutate) await options.onMutate(variables)
+    },
+    onError: (error, variables, ctx) => {
+      toast.error(error.message || `Failed to sign in with ${getProviderLabel(variables.provider)}`)
+      options?.onError?.(error, variables, ctx)
+    },
+  }
+  return useMutation<unknown, Error, SocialSignInVariables>({
+    mutationKey: ['auth', 'sign-in', 'social'],
+    mutationFn: async ({
+      provider,
+      callbackURL = '/',
+      errorCallbackURL,
+      newUserCallbackURL,
+      disableRedirect,
+    }: SocialSignInVariables) => {
+      const { data, error } = await authClient.signIn.social({
+        provider,
+        callbackURL,
+        errorCallbackURL,
+        newUserCallbackURL,
+        disableRedirect,
+      } as any)
+      if (error) throw new Error(error.message)
+      return data
+    },
+    ...mergedOptions,
+  })
+}

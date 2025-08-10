@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -76,7 +76,7 @@
 
 :root {
   --radius: 0rem;
-  --background: oklch(1.0000 0 0);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.1448 0 0);
   --card: oklch(0.9851 0 0);
   --card-foreground: oklch(0.1448 0 0);
@@ -90,7 +90,7 @@
   --muted-foreground: oklch(0.5555 0 0);
   --accent: oklch(0.9702 0 0);
   --accent-foreground: oklch(0.1448 0 0);
-  --destructive: oklch(0.5771 0.2152 27.3250);
+  --destructive: oklch(0.5771 0.2152 27.325);
   --border: oklch(0.9219 0 0);
   --input: oklch(0.9702 0 0);
   --ring: oklch(0.5129 0.2059 289.3682);
@@ -98,7 +98,7 @@
   --chart-2: oklch(0 0 0);
   --chart-3: oklch(0.6559 0.2118 354.3084);
   --chart-4: oklch(0.7049 0.1867 47.6044);
-  --chart-5: oklch(0.7038 0.1230 182.5025);
+  --chart-5: oklch(0.7038 0.123 182.5025);
   --sidebar: oklch(0.9851 0 0);
   --sidebar-foreground: oklch(0.5555 0 0);
   --sidebar-primary: oklch(0.1448 0 0);
@@ -145,15 +145,15 @@
   --muted-foreground: oklch(0.7155 0 0);
   --accent: oklch(0.2393 0 0);
   --accent-foreground: oklch(0.9851 0 0);
-  --destructive: oklch(0.3958 0.1331 25.7230);
+  --destructive: oklch(0.3958 0.1331 25.723);
   --border: oklch(0.2686 0 0);
   --input: oklch(0.2393 0 0);
   --ring: oklch(0.4873 0.2365 270.5881);
   --chart-1: oklch(0.4873 0.2365 270.5881);
-  --chart-2: oklch(1.0000 0 0);
+  --chart-2: oklch(1 0 0);
   --chart-3: oklch(0.6234 0 0);
   --chart-4: oklch(0.7049 0.1867 47.6044);
-  --chart-5: oklch(0.7038 0.1230 182.5025);
+  --chart-5: oklch(0.7038 0.123 182.5025);
   --sidebar: oklch(0.1913 0 0);
   --sidebar-foreground: oklch(0.7155 0 0);
   --sidebar-primary: oklch(0.9851 0 0);
