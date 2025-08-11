@@ -1,5 +1,59 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup
+
+### Pull Environment Variables from Vercel
+
+To sync your local development environment with your Vercel project's environment variables:
+
+1. **Install Vercel CLI** (if not already installed):
+```bash
+npm i -g vercel
+# or
+pnpm add -g vercel
+# or
+bun add -g vercel
+```
+
+2. **Link your local project to Vercel**:
+```bash
+vercel link
+```
+When prompted:
+- Select your scope (personal account or team)
+- Choose to link to an existing project
+- Enter your project name
+
+3. **Pull environment variables**:
+```bash
+vercel env pull .env.local
+```
+This command will:
+- Download all environment variables from your Vercel project
+- Create a `.env.local` file with all variables
+- Automatically handle different environments (development, preview, production)
+
+4. **Verify the `.env.local` file** was created and contains your variables:
+```bash
+cat .env.local
+```
+
+> **Note**: The `.env.local` file is already in `.gitignore` to prevent accidental commits of sensitive data.
+
+### Update Environment Variables
+
+If you need to update or add new environment variables:
+
+1. **Add via Vercel Dashboard**:
+   - Go to your project settings on [vercel.com](https://vercel.com)
+   - Navigate to Settings → Environment Variables
+   - Add/update variables
+
+2. **Pull updates locally**:
+```bash
+vercel env pull .env.local
+```
+
 ## Getting Started
 
 First, run the development server:
