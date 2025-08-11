@@ -122,8 +122,10 @@ export function useSignOutMutation(options?: UseMutationOptions<unknown, Error, 
   const mergedOptions: UseMutationOptions<unknown, Error, void> = {
     ...(options || {}),
     onSuccess: (data, variables, ctx) => {
-      toast.success('Signed out')
       options?.onSuccess?.(data, variables, ctx)
+      setTimeout(() => {
+        toast.success('Signed out')
+      }, 100)
     },
     onError: (error, variables, ctx) => {
       toast.error(error.message || 'Failed to sign out')

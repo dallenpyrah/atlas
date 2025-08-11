@@ -1,58 +1,46 @@
-import type { UIMessage } from 'ai'
+import { convertToModelMessages, streamText } from 'ai'
+import { headers } from 'next/headers'
+import type { AIModel } from '@/lib/ai/models'
+import { auth } from '@/lib/auth'
+import * as response from './response'
+import { createOnFinish } from './service'
 import {
-  convertToModelMessages,
-  InvalidArgumentError,
-  InvalidToolInputError,
-  NoSuchToolError,
-  streamText,
-} from 'ai'
-import { getModelById } from '@/lib/ai/models'
+  getMessagesFromRequest,
+  getModelInfo,
+  getSelectedModelIdFromMessages,
+  handleStreamError,
+} from './utils'
 
 export async function POST(req: Request) {
-  const body = await req.json()
-  const { messages } = body as { messages: UIMessage[] }
+  const headersList = await headers()
+  const session = await auth.api.getSession({ headers: headersList })
 
-  const lastMessage = messages[messages.length - 1]
-  const selectedModelId =
-    (lastMessage?.metadata as { model: string })?.model || 'anthropic/claude-3-5-sonnet'
-
-  const modelInfo = getModelById(selectedModelId)
-  if (!modelInfo) {
-    return new Response(JSON.stringify({ error: `Model ${selectedModelId} not found` }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  if (!session?.user) {
+    return response.createErrorResponse('Unauthorized', 401)
   }
 
   try {
+    const messages = await getMessagesFromRequest(req)
+    const selectedModelId = getSelectedModelIdFromMessages(messages)
+    const modelInfo = getModelInfo(selectedModelId) as AIModel
+
+    if (!modelInfo) {
+      return response.createErrorResponse(`Model ${selectedModelId} not found`, 400)
+    }
+
     const result = streamText({
       model: selectedModelId,
       messages: convertToModelMessages(messages),
-      providerOptions: modelInfo.providerOptions
+      providerOptions: modelInfo.providerOptions,
     })
 
     return result.toUIMessageStreamResponse({
       sendReasoning: modelInfo.isReasoningModel,
-      onError: (error) => {
-        if (NoSuchToolError.isInstance(error)) {
-          return 'The model tried to call a unknown tool.'
-        } else if (InvalidArgumentError.isInstance(error)) {
-          return 'The model called a tool with invalid arguments.'
-        } else if (InvalidToolInputError.isInstance(error)) {
-          return 'The model called a tool with invalid input.'
-        } else {
-          return 'An unknown error occurred.'
-        }
-      },
-      onFinish: (message) => {
-        console.log('onFinish', message)
-      },
+      onError: handleStreamError,
+      onFinish: createOnFinish(messages),
     })
   } catch (error) {
     console.error('Error in chat API:', error)
-    return new Response(JSON.stringify({ error: 'Failed to initialize model' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return response.createErrorResponse('Failed to initialize model', 500)
   }
 }

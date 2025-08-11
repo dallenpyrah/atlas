@@ -1,5 +1,6 @@
-import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
-
+import type { AnthropicProviderOptions } from '@ai-sdk/anthropic'
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
+import type { XaiProviderOptions } from '@ai-sdk/xai'
 
 export type AIProvider = 'openai' | 'anthropic' | 'google' | 'xai'
 
@@ -18,70 +19,20 @@ export interface AIModel {
 
 const openAIModels: AIModel[] = [
   {
-    id: 'openai/gpt-4o',
-    name: 'GPT-4o',
+    id: 'openai/gpt-5',
+    name: 'GPT-5',
     provider: 'openai',
     description:
       "OpenAI's most capable multimodal model with vision, function calling, and 128k context",
     supportsTools: true,
     supportsVision: true,
-    isReasoningModel: false,
-    maxTokens: 16384,
-    contextWindow: 128000,
-  },
-  {
-    id: 'openai/gpt-4o-mini',
-    name: 'GPT-4o Mini',
-    provider: 'openai',
-    description: 'Smaller, faster, and more affordable version of GPT-4o',
-    supportsTools: true,
-    supportsVision: true,
-    isReasoningModel: false,
-    maxTokens: 16384,
-    contextWindow: 128000,
-  },
-  {
-    id: 'openai/gpt-4-turbo',
-    name: 'GPT-4 Turbo',
-    provider: 'openai',
-    description: 'Previous generation GPT-4 with 128k context window',
-    supportsTools: true,
-    supportsVision: true,
-    isReasoningModel: false,
-    maxTokens: 4096,
-    contextWindow: 128000,
-  },
-  {
-    id: 'openai/o1',
-    name: 'OpenAI o1',
-    provider: 'openai',
-    description: 'Advanced reasoning model for complex problem-solving and analysis',
-    supportsTools: false,
-    supportsVision: false,
     isReasoningModel: true,
-    maxTokens: 100000,
-    contextWindow: 200000,
-    providerOptions: {
-      openai: {
-        reasoningEffort: "low",
-        reasoningSummary: "detailed",
-      } satisfies OpenAIResponsesProviderOptions,
-    },
-  },
-  {
-    id: 'openai/o1-mini',
-    name: 'OpenAI o1 Mini',
-    provider: 'openai',
-    description: 'Faster, more affordable reasoning model for STEM and coding tasks',
-    supportsTools: false,
-    supportsVision: false,
-    isReasoningModel: true,
-    maxTokens: 65536,
+    maxTokens: 16384,
     contextWindow: 128000,
     providerOptions: {
       openai: {
-        reasoningEffort: "low",
-        reasoningSummary: "detailed",
+        reasoningEffort: 'low',
+        reasoningSummary: 'detailed',
       } satisfies OpenAIResponsesProviderOptions,
     },
   },
@@ -89,99 +40,109 @@ const openAIModels: AIModel[] = [
 
 const anthropicModels: AIModel[] = [
   {
-    id: 'anthropic/claude-3-5-sonnet',
-    name: 'Claude 3.5 Sonnet',
+    id: 'anthropic/claude-4-sonnet',
+    name: 'Claude 4 Sonnet',
     provider: 'anthropic',
     description:
       "Anthropic's most intelligent model with superior coding and analysis capabilities",
     supportsTools: true,
     supportsVision: true,
-    isReasoningModel: false,
+    isReasoningModel: true,
     maxTokens: 8192,
     contextWindow: 200000,
+    providerOptions: {
+      anthropic: {
+        thinking: { type: 'enabled', budgetTokens: 12000 },
+      } satisfies AnthropicProviderOptions,
+    },
   },
   {
-    id: 'anthropic/claude-3-5-haiku',
-    name: 'Claude 3.5 Haiku',
+    id: 'anthropic/claude-4.1-opus',
+    name: 'Claude 4.1 Opus',
     provider: 'anthropic',
-    description: 'Fast and affordable model for everyday tasks with excellent performance',
+    description:
+      "Anthropic's most intelligent model with superior coding and analysis capabilities",
     supportsTools: true,
     supportsVision: true,
-    isReasoningModel: false,
+    isReasoningModel: true,
     maxTokens: 8192,
     contextWindow: 200000,
-  },
-  {
-    id: 'anthropic/claude-3-opus',
-    name: 'Claude 3 Opus',
-    provider: 'anthropic',
-    description: 'Powerful model for complex tasks requiring deep understanding',
-    supportsTools: true,
-    supportsVision: true,
-    isReasoningModel: false,
-    maxTokens: 4096,
-    contextWindow: 200000,
+    providerOptions: {
+      anthropic: {
+        thinking: { type: 'enabled', budgetTokens: 12000 },
+      } satisfies AnthropicProviderOptions,
+    },
   },
 ]
 
 const googleModels: AIModel[] = [
   {
-    id: 'google/gemini-2.0-flash-exp',
-    name: 'Gemini 2.0 Flash Experimental',
+    id: 'google/gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro',
     provider: 'google',
     description: "Google's latest experimental model with enhanced capabilities",
     supportsTools: true,
     supportsVision: true,
-    isReasoningModel: false,
+    isReasoningModel: true,
     maxTokens: 8192,
     contextWindow: 1048576,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 8192,
+          includeThoughts: true,
+        },
+      },
+    },
   },
   {
-    id: 'google/gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
+    id: 'google/gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
     provider: 'google',
-    description: "Google's flagship model with massive 2M token context window",
+    description: "Google's latest experimental model with enhanced capabilities",
     supportsTools: true,
     supportsVision: true,
-    isReasoningModel: false,
-    maxTokens: 8192,
-    contextWindow: 2097152,
-  },
-  {
-    id: 'google/gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    provider: 'google',
-    description: 'Fast and efficient model optimized for high-volume tasks',
-    supportsTools: true,
-    supportsVision: true,
-    isReasoningModel: false,
+    isReasoningModel: true,
     maxTokens: 8192,
     contextWindow: 1048576,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 8192,
+          includeThoughts: true,
+        },
+      },
+    },
   },
 ]
 
 const xAIModels: AIModel[] = [
   {
-    id: 'xai/grok-2-latest',
-    name: 'Grok 2',
+    id: 'xai/grok-4',
+    name: 'Grok 4',
     provider: 'xai',
     description: "xAI's advanced language model with real-time information access",
     supportsTools: true,
     supportsVision: false,
-    isReasoningModel: false,
+    isReasoningModel: true,
     maxTokens: 4096,
     contextWindow: 131072,
   },
   {
-    id: 'xai/grok-2-vision-latest',
-    name: 'Grok 2 Vision',
+    id: 'xai/grok-3-mini',
+    name: 'Grok 3 Mini',
     provider: 'xai',
-    description: 'Multimodal version of Grok 2 with image understanding capabilities',
+    description: 'Multimodal version of Grok 3 with image understanding capabilities',
     supportsTools: true,
     supportsVision: true,
-    isReasoningModel: false,
+    isReasoningModel: true,
     maxTokens: 4096,
     contextWindow: 131072,
+    providerOptions: {
+      xai: {
+        reasoningEffort: 'low',
+      } satisfies XaiProviderOptions,
+    },
   },
 ]
 

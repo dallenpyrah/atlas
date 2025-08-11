@@ -1,5 +1,6 @@
 import { index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { user } from './auth'
+import { organization } from './organization'
 import { space } from './space'
 
 export const chat = pgTable(
@@ -7,9 +8,10 @@ export const chat = pgTable(
   {
     id: text('id').primaryKey(),
     title: text('title'),
-    spaceId: text('space_id')
-      .notNull()
-      .references(() => space.id, { onDelete: 'cascade' }),
+    spaceId: text('space_id').references(() => space.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id').references(() => organization.id, {
+      onDelete: 'cascade',
+    }),
     userId: text('user_id')
       .notNull()
       .references(() => user.id),
@@ -19,6 +21,7 @@ export const chat = pgTable(
   },
   (table) => ({
     spaceChatIdx: index('idx_space_chats').on(table.spaceId, table.createdAt),
+    organizationChatIdx: index('idx_organization_chats').on(table.organizationId, table.createdAt),
     userChatIdx: index('idx_user_chats').on(table.userId, table.createdAt),
   }),
 )
