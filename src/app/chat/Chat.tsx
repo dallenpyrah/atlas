@@ -1,17 +1,18 @@
 'use client'
 
+import { useChat } from '@ai-sdk/react'
+import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 import { AlertTriangle, ArrowUp, Copy, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { memo, useRef, useState } from 'react'
+import { ModelSelector } from '@/components/chat/model-selector'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
+import { Loader } from '@/components/ui/loader'
 import { Message, MessageAction, MessageActions, MessageContent } from '@/components/ui/message'
 import { PromptInput, PromptInputActions, PromptInputTextarea } from '@/components/ui/prompt-input'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ui/reasoning'
-import { cn } from '@/lib/utils'
-import { useChat } from '@ai-sdk/react'
-import { UIMessagePart, UIMessage, UIDataTypes, UITools } from 'ai'
-import { Loader } from '@/components/ui/loader'
 import { ScrollButton } from '@/components/ui/scroll-button'
+import { cn } from '@/lib/utils'
 
 type MessageComponentProps = {
   message: UIMessage
@@ -37,89 +38,91 @@ function getMessageReasoning(message: UIMessage): string {
   )
 }
 
-export const MessageComponent = memo(({ message, isLastMessage, isStreaming }: MessageComponentProps) => {
-  const isAssistant = message?.role === 'assistant'
-  const messageText = getMessageText(message)
-  const reasoningText = getMessageReasoning(message)
+export const MessageComponent = memo(
+  ({ message, isLastMessage, isStreaming }: MessageComponentProps) => {
+    const isAssistant = message?.role === 'assistant'
+    const messageText = getMessageText(message)
+    const reasoningText = getMessageReasoning(message)
 
-  return (
-    <Message
-      className={cn(
-        'mx-auto flex w-full max-w-3xl flex-col gap-2 px-2 md:px-10',
-        isAssistant ? 'items-start' : 'items-end',
-      )}
-    >
-      {isAssistant ? (
-        <div className="group flex w-full flex-col gap-0 space-y-2">
-          {reasoningText && (
-            <Reasoning isStreaming={isLastMessage && isStreaming}>
-              <ReasoningTrigger
-                className="mb-1"
-                textClassName="text-muted-foreground hover:underline"
-              >
-                Reasoning
-              </ReasoningTrigger>
-              <ReasoningContent
-                markdown
-                className="ml-2 border-l border-l-slate-200 px-2 pb-1 text-muted-foreground dark:border-l-slate-700"
-                contentClassName="prose-sm"
-              >
-                {reasoningText}
-              </ReasoningContent>
-            </Reasoning>
-          )}
-
-          <MessageContent
-            className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0"
-            markdown
-          >
-            {messageText}
-          </MessageContent>
-
-          <MessageActions
-            className={cn(
-              '-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              isLastMessage && 'opacity-100',
+    return (
+      <Message
+        className={cn(
+          'mx-auto flex w-full max-w-3xl flex-col gap-2 px-2 md:px-10',
+          isAssistant ? 'items-start' : 'items-end',
+        )}
+      >
+        {isAssistant ? (
+          <div className="group flex w-full flex-col gap-0 space-y-2">
+            {reasoningText && (
+              <Reasoning isStreaming={isLastMessage && isStreaming}>
+                <ReasoningTrigger
+                  className="mb-1"
+                  textClassName="text-muted-foreground hover:underline"
+                >
+                  Reasoning
+                </ReasoningTrigger>
+                <ReasoningContent
+                  markdown
+                  className="ml-2 border-l border-l-slate-200 px-2 pb-1 text-muted-foreground dark:border-l-slate-700"
+                  contentClassName="prose-sm"
+                >
+                  {reasoningText}
+                </ReasoningContent>
+              </Reasoning>
             )}
-          >
-            <MessageAction tooltip="Copy" delayDuration={100}>
-              <Button variant="ghost" size="icon">
-                <Copy />
-              </Button>
-            </MessageAction>
-            <MessageAction tooltip="Upvote" delayDuration={100}>
-              <Button variant="ghost" size="icon">
-                <ThumbsUp />
-              </Button>
-            </MessageAction>
-            <MessageAction tooltip="Downvote" delayDuration={100}>
-              <Button variant="ghost" size="icon">
-                <ThumbsDown />
-              </Button>
-            </MessageAction>
-          </MessageActions>
-        </div>
-      ) : (
-        <div className="group flex w-full flex-col items-end gap-1">
-          <MessageContent className="bg-muted text-foreground max-w-[85%] px-5 py-2.5 whitespace-pre-wrap sm:max-w-[75%]">
-            {messageText}
-          </MessageContent>
-          <MessageActions
-            className={cn(
-              'flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-            )}
-          >
-            <MessageAction tooltip="Copy" delayDuration={100}>
-              <Button variant="ghost" size="icon">
-                <Copy />
-              </Button>
-            </MessageAction>
-          </MessageActions>
-        </div>
-      )}
-    </Message>
-  )
-})
+
+            <MessageContent
+              className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0"
+              markdown
+            >
+              {messageText}
+            </MessageContent>
+
+            <MessageActions
+              className={cn(
+                '-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                isLastMessage && 'opacity-100',
+              )}
+            >
+              <MessageAction tooltip="Copy" delayDuration={100}>
+                <Button variant="ghost" size="icon">
+                  <Copy />
+                </Button>
+              </MessageAction>
+              <MessageAction tooltip="Upvote" delayDuration={100}>
+                <Button variant="ghost" size="icon">
+                  <ThumbsUp />
+                </Button>
+              </MessageAction>
+              <MessageAction tooltip="Downvote" delayDuration={100}>
+                <Button variant="ghost" size="icon">
+                  <ThumbsDown />
+                </Button>
+              </MessageAction>
+            </MessageActions>
+          </div>
+        ) : (
+          <div className="group flex w-full flex-col items-end gap-1">
+            <MessageContent className="bg-muted text-foreground max-w-[85%] px-5 py-2.5 whitespace-pre-wrap sm:max-w-[75%]">
+              {messageText}
+            </MessageContent>
+            <MessageActions
+              className={cn(
+                'flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              )}
+            >
+              <MessageAction tooltip="Copy" delayDuration={100}>
+                <Button variant="ghost" size="icon">
+                  <Copy />
+                </Button>
+              </MessageAction>
+            </MessageActions>
+          </div>
+        )}
+      </Message>
+    )
+  },
+)
 
 MessageComponent.displayName = 'MessageComponent'
 
@@ -154,9 +157,19 @@ type PromptBarProps = {
   onSubmit: () => void
   isLoading: boolean
   variant: 'centered' | 'bottom'
+  selectedModel: string
+  onModelChange: (model: string) => void
 }
 
-function PromptBar({ value, onChange, onSubmit, isLoading, variant }: PromptBarProps) {
+function PromptBar({
+  value,
+  onChange,
+  onSubmit,
+  isLoading,
+  variant,
+  selectedModel,
+  onModelChange,
+}: PromptBarProps) {
   return (
     <PromptInput
       isLoading={isLoading}
@@ -175,7 +188,7 @@ function PromptBar({ value, onChange, onSubmit, isLoading, variant }: PromptBarP
         />
 
         <PromptInputActions className="mt-3 flex w-full items-center justify-between gap-2 p-2">
-          <div />
+          <ModelSelector value={selectedModel} onValueChange={onModelChange} />
           <div className="flex items-center gap-2">
             <Button
               size="icon"
@@ -193,15 +206,21 @@ function PromptBar({ value, onChange, onSubmit, isLoading, variant }: PromptBarP
 }
 
 function Chat() {
-  const [input, setInput] = useState('');
-  const { messages, sendMessage, status, error } = useChat();
+  const [input, setInput] = useState('')
+  const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-5-sonnet')
+  const { messages, sendMessage, status, error } = useChat({
+    onError: (error) => console.error('Chat error:', error),
+  })
   const isEmpty = messages.length === 0
   const isBusy = status !== 'ready'
   const containerRef = useRef<HTMLDivElement>(null)
 
   const handleSubmit = () => {
     if (!input.trim() || isBusy) return
-    sendMessage({ text: input })
+    sendMessage({
+      text: input,
+      metadata: { model: selectedModel },
+    })
     setInput('')
   }
 
@@ -216,6 +235,8 @@ function Chat() {
               onSubmit={handleSubmit}
               isLoading={false}
               variant="centered"
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
             />
           </div>
         </div>
@@ -243,16 +264,15 @@ function Chat() {
             </div>
           </ChatContainerRoot>
 
-          <div
-            className="inset-x-0 bottom-0 mx-auto w-full max-w-3xl shrink-0 px-3"
-            key="bottom"
-          >
+          <div className="inset-x-0 bottom-0 mx-auto w-full max-w-3xl shrink-0 px-3" key="bottom">
             <PromptBar
               value={input}
               onChange={setInput}
               onSubmit={handleSubmit}
               isLoading={isBusy}
               variant="bottom"
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
             />
           </div>
         </>

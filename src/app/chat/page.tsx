@@ -5,7 +5,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { auth } from '@/lib/auth'
 import { Chat } from './chat'
 
-export default async function ChatPage() {  
+export default async function ChatPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
