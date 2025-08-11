@@ -3,7 +3,8 @@
 import { useChat } from '@ai-sdk/react'
 import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 import { AlertTriangle, ArrowUp, Copy, ThumbsDown, ThumbsUp } from 'lucide-react'
-import { memo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { memo, useCallback, useRef, useState } from 'react'
 import { ModelSelector } from '@/components/chat/model-selector'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
@@ -13,6 +14,8 @@ import { PromptInput, PromptInputActions, PromptInputTextarea } from '@/componen
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ui/reasoning'
 import { ScrollButton } from '@/components/ui/scroll-button'
 import { cn } from '@/lib/utils'
+import { useCreateChatMutation, useUpdateChatMutation } from '@/mutations/chat'
+import { useChatById } from '@/queries/chats'
 
 type MessageComponentProps = {
   message: UIMessage
@@ -205,24 +208,84 @@ function PromptBar({
   )
 }
 
-function Chat() {
+type ChatInnerProps = {
+  chatId?: string
+  initialMessages?: UIMessage[]
+  initialModel?: string
+}
+
+function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: ChatInnerProps) {
+  const router = useRouter()
   const [input, setInput] = useState('')
-  const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-5-sonnet')
+  const [selectedModel, setSelectedModel] = useState(
+    initialModel || 'gpt-5',
+  )
+  const [chatId, setChatId] = useState<string | undefined>(providedChatId)
+  const createChatMutation = useCreateChatMutation()
+  const updateChatMutation = useUpdateChatMutation()
+  
   const { messages, sendMessage, status, error } = useChat({
+    id: chatId,
+    messages: initialMessages,
     onError: (error) => console.error('Chat error:', error),
   })
+  
   const isEmpty = messages.length === 0
-  const isBusy = status !== 'ready'
+  const isBusy = status !== 'ready' || createChatMutation.isPending
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const handleSubmit = () => {
+  const handleModelChange = useCallback(
+    async (model: string) => {
+      setSelectedModel(model)
+      if (chatId) {
+        try {
+          await updateChatMutation.mutateAsync({ chatId, updates: { metadata: { model } } })
+        } catch (_err) {
+          // error toast handled by mutation
+        }
+      }
+    },
+    [chatId, updateChatMutation],
+  )
+
+  const handleSubmit = useCallback(async () => {
     if (!input.trim() || isBusy) return
-    sendMessage({
-      text: input,
-      metadata: { model: selectedModel },
-    })
+    
+    const messageText = input
     setInput('')
-  }
+    
+    if (!chatId) {
+      try {
+        const title = messageText.length > 100 ? `${messageText.substring(0, 97)}...` : messageText
+        const result = await createChatMutation.mutateAsync({
+          title,
+          metadata: { model: selectedModel },
+        })
+        const newId = result.id
+        setChatId(newId)
+        router.push(`/chat/${newId}`, { scroll: false })
+
+        sendMessage({
+          text: messageText,
+          metadata: {
+            model: selectedModel,
+            chatId: newId,
+          },
+        })
+      } catch (error) {
+        console.error('Failed to create chat:', error)
+        setInput(messageText)
+      }
+    } else {
+      sendMessage({
+        text: messageText,
+        metadata: { 
+          model: selectedModel,
+          chatId,
+        },
+      })
+    }
+  }, [input, isBusy, chatId, selectedModel, sendMessage, router, createChatMutation])
 
   return (
     <div ref={containerRef} className="flex h-[calc(92vh)] flex-col overflow-hidden">
@@ -233,10 +296,10 @@ function Chat() {
               value={input}
               onChange={setInput}
               onSubmit={handleSubmit}
-              isLoading={false}
+              isLoading={isBusy}
               variant="centered"
               selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
+              onModelChange={handleModelChange}
             />
           </div>
         </div>
@@ -272,12 +335,53 @@ function Chat() {
               isLoading={isBusy}
               variant="bottom"
               selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
+              onModelChange={handleModelChange}
             />
           </div>
         </>
       )}
     </div>
+  )
+}
+
+type ChatProps = { chatId?: string }
+
+function Chat({ chatId }: ChatProps) {
+  const { data, isLoading, error } = useChatById(chatId)
+
+  if (chatId && isLoading) {
+    return (
+      <div className="flex h-[calc(92vh)] flex-col overflow-hidden">
+        <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
+          <ChatContainerContent className="space-y-6 px-4 py-12">
+            <LoadingMessage />
+          </ChatContainerContent>
+        </ChatContainerRoot>
+      </div>
+    )
+  }
+
+  if (chatId && error) {
+    return (
+      <div className="flex h-[calc(92vh)] flex-col overflow-hidden">
+        <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
+          <ChatContainerContent className="space-y-6 px-4 py-12">
+            <ErrorMessage error={error as Error} />
+          </ChatContainerContent>
+        </ChatContainerRoot>
+      </div>
+    )
+  }
+
+  const initialMessages = chatId && data ? (data.messages as UIMessage[]) : undefined
+  const initialModel = (() => {
+    const meta = (data?.metadata as Record<string, unknown> | undefined) ?? undefined
+    const model = typeof meta?.model === 'string' ? (meta.model as string) : undefined
+    return model
+  })()
+
+  return (
+    <ChatInner chatId={chatId} initialMessages={initialMessages} initialModel={initialModel} />
   )
 }
 

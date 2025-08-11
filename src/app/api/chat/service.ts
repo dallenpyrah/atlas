@@ -186,7 +186,18 @@ export function createOnFinish(messages: UIMessage[]) {
       return
     }
 
-    void saveChatExchange({ user, assistant }).catch((error) => {
+    const userMeta = (user?.metadata as Record<string, any> | undefined) ?? {}
+    const chatId = userMeta.chatId ?? userMeta.chat_id
+
+    const assistantWithChatId = {
+      ...assistant,
+      metadata: {
+        ...((assistant.metadata as Record<string, any>) ?? {}),
+        chatId,
+      },
+    }
+
+    void saveChatExchange({ user, assistant: assistantWithChatId }).catch((error) => {
       console.error('Failed to persist chat exchange:', error)
     })
   }

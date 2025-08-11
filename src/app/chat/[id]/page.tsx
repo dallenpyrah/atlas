@@ -3,9 +3,13 @@ import { redirect } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { auth } from '@/lib/auth'
-import { Chat } from './chat'
+import { Chat } from '../chat'
 
-export default async function ChatPage() {
+type ChatPageParams = Promise<{
+  id: string
+}>
+
+export default async function ChatPage({ params }: { params: ChatPageParams }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -13,6 +17,8 @@ export default async function ChatPage() {
   if (!session) {
     redirect('/login')
   }
+
+  const { id } = await params
 
   return (
     <SidebarProvider>
@@ -23,7 +29,7 @@ export default async function ChatPage() {
             <SidebarTrigger className="-ml-1" />
           </div>
         </header>
-        <Chat chatId={undefined} />
+        <Chat chatId={id} />
       </SidebarInset>
     </SidebarProvider>
   )

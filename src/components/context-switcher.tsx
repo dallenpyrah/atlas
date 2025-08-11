@@ -39,16 +39,16 @@ export function ContextSwitcher() {
   const getIcon = (type: Context['type']) => {
     switch (type) {
       case 'personal':
-        return <User className="h-4 w-4" />
+        return <User className="ml-1 h-4 w-4" />
       case 'organization':
-        return <Building2 className="h-4 w-4" />
+        return <Building2 className="ml-1 h-4 w-4" />
       case 'space':
-        return <FolderOpen className="h-4 w-4" />
+        return <FolderOpen className="ml-1 h-4 w-4" />
     }
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu  open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
