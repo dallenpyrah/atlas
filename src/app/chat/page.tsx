@@ -3,9 +3,9 @@ import { redirect } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { auth } from '@/lib/auth'
-import Chat from './Chat'
+import { Chat } from './chat'
 
-export default async function ChatPage() {
+export default async function ChatPage() {  
   const session = await auth.api.getSession({
     headers: await headers(),
   })

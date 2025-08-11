@@ -69,9 +69,10 @@ function Reasoning({ children, className, open, onOpenChange, isStreaming }: Rea
 export type ReasoningTriggerProps = {
   children: React.ReactNode
   className?: string
+  textClassName?: string
 } & React.HTMLAttributes<HTMLButtonElement>
 
-function ReasoningTrigger({ children, className, ...props }: ReasoningTriggerProps) {
+function ReasoningTrigger({ children, className, textClassName, ...props }: ReasoningTriggerProps) {
   const { isOpen, onOpenChange } = useReasoningContext()
 
   return (
@@ -80,7 +81,7 @@ function ReasoningTrigger({ children, className, ...props }: ReasoningTriggerPro
       onClick={() => onOpenChange(!isOpen)}
       {...props}
     >
-      <span className="text-primary">{children}</span>
+      <span className={cn('text-primary', textClassName)}>{children}</span>
       <div className={cn('transform transition-transform', isOpen ? 'rotate-180' : '')}>
         <ChevronDownIcon className="size-4" />
       </div>

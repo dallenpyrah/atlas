@@ -1,24 +1,46 @@
 'use client'
 
 import { AlertTriangle, ArrowUp, Copy, ThumbsDown, ThumbsUp } from 'lucide-react'
-import { memo, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
-import { DotsLoader } from '@/components/ui/loader'
 import { Message, MessageAction, MessageActions, MessageContent } from '@/components/ui/message'
 import { PromptInput, PromptInputActions, PromptInputTextarea } from '@/components/ui/prompt-input'
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ui/reasoning'
 import { cn } from '@/lib/utils'
-
-type ChatMessagePart = { type: 'text'; text: string }
-type ChatMessage = { id: string; role: 'user' | 'assistant'; parts: ChatMessagePart[] }
+import { useChat } from '@ai-sdk/react'
+import { UIMessagePart, UIMessage, UIDataTypes, UITools } from 'ai'
+import { Loader } from '@/components/ui/loader'
+import { ScrollButton } from '@/components/ui/scroll-button'
 
 type MessageComponentProps = {
-  message: ChatMessage
+  message: UIMessage
   isLastMessage: boolean
+  isStreaming: boolean
 }
 
-export const MessageComponent = memo(({ message, isLastMessage }: MessageComponentProps) => {
+function getMessageText(message: UIMessage): string {
+  return (
+    message?.parts
+      ?.filter((part: UIMessagePart<UIDataTypes, UITools>) => part.type === 'text')
+      .map((part: UIMessagePart<UIDataTypes, UITools> & { text: string }) => part.text)
+      .join('') ?? ''
+  )
+}
+
+function getMessageReasoning(message: UIMessage): string {
+  return (
+    message?.parts
+      ?.filter((part: UIMessagePart<UIDataTypes, UITools>) => part.type === 'reasoning')
+      .map((part: UIMessagePart<UIDataTypes, UITools> & { text: string }) => part.text)
+      .join('') ?? ''
+  )
+}
+
+export const MessageComponent = memo(({ message, isLastMessage, isStreaming }: MessageComponentProps) => {
   const isAssistant = message?.role === 'assistant'
+  const messageText = getMessageText(message)
+  const reasoningText = getMessageReasoning(message)
 
   return (
     <Message
@@ -29,14 +51,29 @@ export const MessageComponent = memo(({ message, isLastMessage }: MessageCompone
     >
       {isAssistant ? (
         <div className="group flex w-full flex-col gap-0 space-y-2">
+          {reasoningText && (
+            <Reasoning isStreaming={isLastMessage && isStreaming}>
+              <ReasoningTrigger
+                className="mb-1"
+                textClassName="text-muted-foreground hover:underline"
+              >
+                Reasoning
+              </ReasoningTrigger>
+              <ReasoningContent
+                markdown
+                className="ml-2 border-l border-l-slate-200 px-2 pb-1 text-muted-foreground dark:border-l-slate-700"
+                contentClassName="prose-sm"
+              >
+                {reasoningText}
+              </ReasoningContent>
+            </Reasoning>
+          )}
+
           <MessageContent
             className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0"
             markdown
           >
-            {message?.parts
-              .filter((part: any) => part.type === 'text')
-              .map((part: any) => part.text)
-              .join('')}
+            {messageText}
           </MessageContent>
 
           <MessageActions
@@ -65,7 +102,7 @@ export const MessageComponent = memo(({ message, isLastMessage }: MessageCompone
       ) : (
         <div className="group flex w-full flex-col items-end gap-1">
           <MessageContent className="bg-muted text-foreground max-w-[85%] px-5 py-2.5 whitespace-pre-wrap sm:max-w-[75%]">
-            {message?.parts.map((part: any) => (part.type === 'text' ? part.text : null)).join('')}
+            {messageText}
           </MessageContent>
           <MessageActions
             className={cn(
@@ -90,7 +127,7 @@ const LoadingMessage = memo(() => (
   <Message className="mx-auto flex w-full max-w-3xl flex-col items-start gap-2 px-2 md:px-10">
     <div className="group flex w-full flex-col gap-0">
       <div className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0">
-        <DotsLoader />
+        <Loader variant="typing" />
       </div>
     </div>
   </Message>
@@ -156,88 +193,28 @@ function PromptBar({ value, onChange, onSubmit, isLoading, variant }: PromptBarP
 }
 
 function Chat() {
-  const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [status, setStatus] = useState<'ready' | 'submitted' | 'error'>('ready')
-  const [error, setError] = useState<Error | null>(null)
-
-  const simulateAssistantResponse = (text: string): string => {
-    const now = new Date()
-    const lower = text.toLowerCase()
-
-    const formatTime = (timeZone: string) =>
-      new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }).format(now)
-
-    if (lower.includes('current date')) {
-      return `Today is ${now.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })}.`
-    }
-
-    if (lower.includes('tokyo')) {
-      return `Current time in Tokyo: ${formatTime('Asia/Tokyo')}`
-    }
-
-    if (lower.includes('europe/paris') || lower.includes('paris')) {
-      return `Current time in Paris: ${formatTime('Europe/Paris')}`
-    }
-
-    return 'This is a simulated response.'
-  }
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status, error } = useChat();
+  const isEmpty = messages.length === 0
+  const isBusy = status !== 'ready'
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const handleSubmit = () => {
-    const trimmed = input.trim()
-    if (!trimmed) return
-
-    const userMessage: ChatMessage = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      role: 'user',
-      parts: [{ type: 'text', text: trimmed }],
-    }
-
-    setMessages((prev) => [...prev, userMessage])
+    if (!input.trim() || isBusy) return
+    sendMessage({ text: input })
     setInput('')
-    setStatus('submitted')
-
-    setTimeout(() => {
-      try {
-        const responseText = simulateAssistantResponse(trimmed)
-        const assistantMessage: ChatMessage = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          role: 'assistant',
-          parts: [{ type: 'text', text: responseText }],
-        }
-        setMessages((prev) => [...prev, assistantMessage])
-        setStatus('ready')
-      } catch (_) {
-        setError(new Error('Failed to simulate response'))
-        setStatus('error')
-      }
-    }, 600)
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {messages.length === 0 ? (
+    <div ref={containerRef} className="flex h-[calc(92vh)] flex-col overflow-hidden">
+      {isEmpty ? (
         <div className="flex flex-1 items-center justify-center px-3 md:px-5" key="centered">
           <div className="flex flex-col items-center justify-center w-full max-w-3xl">
             <PromptBar
               value={input}
               onChange={setInput}
               onSubmit={handleSubmit}
-              isLoading={status !== 'ready'}
+              isLoading={false}
               variant="centered"
             />
           </div>
@@ -253,6 +230,7 @@ function Chat() {
                     key={message.id}
                     message={message}
                     isLastMessage={isLastMessage}
+                    isStreaming={status !== 'ready'}
                   />
                 )
               })}
@@ -260,17 +238,20 @@ function Chat() {
               {status === 'submitted' && <LoadingMessage />}
               {status === 'error' && error && <ErrorMessage error={error} />}
             </ChatContainerContent>
+            <div className="absolute right-7 bottom-4">
+              <ScrollButton className="shadow-sm" />
+            </div>
           </ChatContainerRoot>
 
           <div
-            className="inset-x-0 bottom-0 mx-auto w-full max-w-3xl shrink-0 px-3 pb-3 md:px-5 md:pb-5"
+            className="inset-x-0 bottom-0 mx-auto w-full max-w-3xl shrink-0 px-3"
             key="bottom"
           >
             <PromptBar
               value={input}
               onChange={setInput}
               onSubmit={handleSubmit}
-              isLoading={status !== 'ready'}
+              isLoading={isBusy}
               variant="bottom"
             />
           </div>
@@ -280,4 +261,4 @@ function Chat() {
   )
 }
 
-export default Chat
+export { Chat }
