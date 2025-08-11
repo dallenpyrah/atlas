@@ -1,5 +1,5 @@
 import { Polar } from '@polar-sh/sdk'
-import { authClient } from './auth-client'
+import { authClient } from '@/clients/auth'
 
 export const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN || '',

@@ -12,7 +12,8 @@ bun run build        # Build production bundle
 bun run start        # Start production server
 
 # Code Quality
-bun run check        # Run Biome linting and formatting checks
+bun run lint         # Run Biome linting checks
+bun run lint:fix     # Auto-fix linting issues
 bun run format       # Auto-format code with Biome
 bun run typecheck    # Run TypeScript type checking
 
@@ -23,8 +24,15 @@ bun run db:push      # Push schema changes directly (development only)
 bun run db:studio    # Open Drizzle Studio for database inspection
 
 # Testing
-bun test            # Run unit tests with Bun test runner
+bun test            # Run unit tests (excludes e2e and integration)
 bun test:watch      # Run tests in watch mode
+bun test:unit       # Run tests with coverage
+bun test:e2e        # Run Playwright E2E tests
+bun test:ci         # Run full CI suite (lint + typecheck + unit tests)
+
+# Background Jobs
+bun run dev:trigger     # Start Trigger.dev development server
+bun run trigger:deploy  # Deploy Trigger.dev tasks to production
 ```
 
 ## Architecture Overview
@@ -65,6 +73,16 @@ src/
 └── types/              # TypeScript type definitions
 ```
 
+### Database Schema Overview
+The application uses a comprehensive multi-tenant architecture with the following key tables:
+
+1. **Authentication & Users**: `user`, `session`, `account`, `verification`
+2. **Organizations**: `organization`, `member`, `invitation` - Multi-tenancy support
+3. **Spaces**: `space`, `space_member`, `space_invitation` - Collaborative workspaces
+4. **Chat System**: `chat`, `message`, `chat_stream` - AI SDK v5 compatible
+5. **Tasks**: `task`, `task_stream` - Background AI job processing with Trigger.dev
+6. **Files**: `file`, `file_permission`, `file_version` - Vercel Blob + Upstash Vector integration
+
 ### Authentication Architecture
 Better Auth is configured with:
 - Database sessions stored in PostgreSQL
@@ -80,8 +98,10 @@ Access auth client: `import { auth } from "@/lib/auth"`
 Drizzle ORM manages the PostgreSQL schema with tables for:
 - Users, sessions, accounts (authentication)
 - Organizations, members, invitations (multi-tenancy)
-- Subscriptions (Polar.sh integration)
-- Verification tokens
+- Spaces for personal/organizational workspaces
+- Chat messages with AI SDK v5 UIMessage structure
+- Tasks for background processing with Trigger.dev
+- Files with Vercel Blob storage and Upstash Vector embeddings
 
 Schema location: `src/lib/db/schema.ts`
 
@@ -111,6 +131,12 @@ Required environment variables categories:
 - Email service (RESEND_API_KEY)
 - AI services (provider API keys)
 - Background jobs (TRIGGER_SECRET_KEY)
+
+Pull environment variables from Vercel:
+```bash
+vercel link
+vercel env pull .env.local
+```
 
 ### Code Style Guidelines
 - Biome for linting and formatting (ESLint/Prettier disabled)

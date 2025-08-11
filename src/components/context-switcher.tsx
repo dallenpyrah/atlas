@@ -1,15 +1,15 @@
 'use client'
 
+import { Building2, Check, ChevronsUpDown, FolderOpen, Plus, User } from 'lucide-react'
 import * as React from 'react'
-import { Check, ChevronsUpDown, Building2, User, FolderOpen, Plus } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu'
 
 interface Context {

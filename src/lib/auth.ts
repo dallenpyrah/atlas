@@ -2,11 +2,11 @@ import { checkout, polar, portal, usage, webhooks } from '@polar-sh/better-auth'
 import { Polar } from '@polar-sh/sdk'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { organization } from 'better-auth/plugins'
 import { nextCookies } from 'better-auth/next-js'
+import { organization } from 'better-auth/plugins'
+import { resendClient } from '@/clients/resend'
 import { db } from './db'
 import * as schema from './db/schema'
-import { resendClient } from '@/lib/resend'
 
 const polarClient = process.env.POLAR_ACCESS_TOKEN
   ? new Polar({
@@ -116,7 +116,6 @@ export const auth = betterAuth({
       },
     }),
     ...(polarPlugin ? [polarPlugin] : []),
-    // Keep this last to let Next.js manage cookies for server actions
     nextCookies(),
   ],
 })

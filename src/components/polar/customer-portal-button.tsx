@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { openCustomerPortal } from '@/lib/polar'
+import { openCustomerPortal } from '@/clients/polar'
 
 interface CustomerPortalButtonProps {
   children: React.ReactNode

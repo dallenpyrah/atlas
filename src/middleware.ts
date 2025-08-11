@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { apiRateLimiter } from '@/lib/upstash/ratelimit'
+import { apiRateLimiter } from '@/lib/ratelimit'
 
 export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/')) {

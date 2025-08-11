@@ -1,8 +1,8 @@
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
 import Chat from './Chat'
 
 export default async function ChatPage() {

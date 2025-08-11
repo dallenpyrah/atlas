@@ -1,14 +1,14 @@
 'use client'
-import * as React from 'react'
-import Link from 'next/link'
 import type { Route } from 'next'
-import { Button } from '@/components/ui/button'
 import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import * as React from 'react'
+import { GitHubButton, GoogleButton, XButton } from '@/components/social/SocialButtons'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useRouter } from 'next/navigation'
 import { useSignUpEmailMutation } from '@/mutations/auth'
-import { GitHubButton, GoogleButton, XButton } from '@/components/social/SocialButtons'
 
 export default function SignUpPage() {
   const router = useRouter()

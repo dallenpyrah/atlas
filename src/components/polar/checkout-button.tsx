@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createCheckoutSession, createCheckoutSessionBySlug } from '@/lib/polar'
+import { createCheckoutSession, createCheckoutSessionBySlug } from '@/clients/polar'
 
 interface CheckoutButtonProps {
   productId?: string

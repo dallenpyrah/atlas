@@ -1,18 +1,18 @@
 'use client'
 
-import * as React from 'react'
-import { MessageSquare, ChevronRight, Plus, Search } from 'lucide-react'
-import Link from 'next/link'
+import { ChevronRight, MessageSquare, Plus, Search } from 'lucide-react'
 import type { Route } from 'next'
-
-import { NavUser } from '@/components/nav-user'
+import Link from 'next/link'
+import type * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
 import { ContextSwitcher } from '@/components/context-switcher'
+import { NavUser } from '@/components/nav-user'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuAction,
@@ -21,7 +21,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarGroup,
 } from '@/components/ui/sidebar'
 
 const data = {

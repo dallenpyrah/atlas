@@ -1,13 +1,13 @@
 'use client'
-import * as React from 'react'
 import type { Route } from 'next'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import * as React from 'react'
+import { AtlasBadge } from '@/components/atlas-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useResetPasswordMutation } from '@/mutations/auth'
-import { AtlasBadge } from '@/components/atlas-badge'
-import Link from 'next/link'
 
 export default function ResetPasswordPage({
   searchParams,

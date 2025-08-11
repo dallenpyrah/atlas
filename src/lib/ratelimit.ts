@@ -1,5 +1,5 @@
 import { Ratelimit } from '@upstash/ratelimit'
-import redis from './redis'
+import redis from '@/clients/redis'
 
 export function createRateLimiter(
   requests: number,
