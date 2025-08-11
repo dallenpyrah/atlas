@@ -10,5 +10,3 @@ export function AtlasBadge({ href = '/' }: { href?: string }) {
     </Link>
   )
 }
-
-

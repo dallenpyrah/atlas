@@ -32,9 +32,9 @@ export function ContextSwitcher() {
   const [selectedContext, setSelectedContext] = React.useState<Context>(contexts[0])
   const [open, setOpen] = React.useState(false)
 
-  const personalContext = contexts.filter(c => c.type === 'personal')
-  const organizations = contexts.filter(c => c.type === 'organization')
-  const spaces = contexts.filter(c => c.type === 'space')
+  const personalContext = contexts.filter((c) => c.type === 'personal')
+  const organizations = contexts.filter((c) => c.type === 'organization')
+  const spaces = contexts.filter((c) => c.type === 'space')
 
   const getIcon = (type: Context['type']) => {
     switch (type) {
@@ -75,15 +75,13 @@ export function ContextSwitcher() {
             >
               <User className="mr-2 h-4 w-4" />
               <span>{context.name}</span>
-              {selectedContext.id === context.id && (
-                <Check className="ml-auto h-4 w-4" />
-              )}
+              {selectedContext.id === context.id && <Check className="ml-auto h-4 w-4" />}
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
-        
+
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuGroup>
           <DropdownMenuLabel>Organizations</DropdownMenuLabel>
           {organizations.map((context) => (
@@ -96,9 +94,7 @@ export function ContextSwitcher() {
             >
               <Building2 className="mr-2 h-4 w-4" />
               <span>{context.name}</span>
-              {selectedContext.id === context.id && (
-                <Check className="ml-auto h-4 w-4" />
-              )}
+              {selectedContext.id === context.id && <Check className="ml-auto h-4 w-4" />}
             </DropdownMenuItem>
           ))}
           <DropdownMenuItem>
@@ -106,9 +102,9 @@ export function ContextSwitcher() {
             <span>Create Organization</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        
+
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuGroup>
           <DropdownMenuLabel>Spaces</DropdownMenuLabel>
           {spaces.map((context) => (
@@ -124,9 +120,7 @@ export function ContextSwitcher() {
                 <span>{context.name}</span>
                 <span className="text-xs text-muted-foreground">{context.parent}</span>
               </div>
-              {selectedContext.id === context.id && (
-                <Check className="ml-auto h-4 w-4" />
-              )}
+              {selectedContext.id === context.id && <Check className="ml-auto h-4 w-4" />}
             </DropdownMenuItem>
           ))}
           <DropdownMenuItem>

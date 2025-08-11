@@ -123,7 +123,7 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => signOutMutation.mutate()}
               disabled={signOutMutation.isPending}
             >

@@ -208,9 +208,7 @@ export function useSignInSocialMutation(
   })
 }
 
-export function useSignOutMutation(
-  options?: UseMutationOptions<unknown, Error, void>,
-) {
+export function useSignOutMutation(options?: UseMutationOptions<unknown, Error, void>) {
   const mergedOptions: UseMutationOptions<unknown, Error, void> = {
     ...(options || {}),
     onSuccess: (data, variables, ctx) => {

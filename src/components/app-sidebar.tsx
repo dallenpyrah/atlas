@@ -37,7 +37,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
-      <SidebarHeader className='my-1'>
+      <SidebarHeader className="my-1">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
@@ -46,12 +46,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className='my-1'>
+      <SidebarContent className="my-1">
         <SidebarGroup>
           <SidebarMenu>
-          <SidebarMenuItem>
-            <ContextSwitcher />
-          </SidebarMenuItem>
+            <SidebarMenuItem>
+              <ContextSwitcher />
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <Link href={'/chat/new' as Route}>
