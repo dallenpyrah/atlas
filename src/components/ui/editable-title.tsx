@@ -45,7 +45,7 @@ export function EditableTitle({
 
   const handleSave = async () => {
     if (isSaving) return
-    
+
     const trimmedValue = value.trim()
     if (!trimmedValue || trimmedValue === title) {
       setValue(title)
@@ -82,7 +82,7 @@ export function EditableTitle({
 
   if (!isEditing) {
     return (
-      <span 
+      <span
         className={cn('truncate cursor-pointer', className)}
         onClick={(e) => {
           e.preventDefault()
@@ -96,12 +96,11 @@ export function EditableTitle({
   }
 
   return (
-    <div className={cn('relative inline-flex items-center', className)} onClick={(e) => e.stopPropagation()}>
-      <span
-        ref={spanRef}
-        className="invisible absolute whitespace-pre"
-        style={{ font: 'inherit' }}
-      >
+    <div
+      className={cn('relative inline-flex items-center', className)}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span ref={spanRef} className="invisible absolute whitespace-pre" style={{ font: 'inherit' }}>
         {value || ' '}
       </span>
       <input

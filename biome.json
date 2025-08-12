@@ -24,7 +24,14 @@
     "lineWidth": 100
   },
   "files": {
-    "ignoreUnknown": false
+    "ignoreUnknown": false,
+    "experimentalScannerIgnores": [
+      ".next/**",
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      ".turbo/**"
+    ]
   },
   "javascript": {
     "formatter": {

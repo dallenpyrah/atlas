@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { CommandItem } from '@/components/ui/command'
 import { EditableTitle } from '@/components/ui/editable-title'
 import { useUpdateChatMutation } from '@/mutations/chat'
@@ -23,10 +23,10 @@ export function CommandChatItem({ chat, onClose, ChatActionsMenu }: CommandChatI
   const updateChatMutation = useUpdateChatMutation()
   const queryClient = useQueryClient()
   const router = useRouter()
-  
+
   const title = chat.title ?? 'Untitled'
   const value = `${title} | ${chat.id}`
-  
+
   const handleSave = async (newTitle: string) => {
     await updateChatMutation.mutateAsync({
       chatId: chat.id,
@@ -34,7 +34,7 @@ export function CommandChatItem({ chat, onClose, ChatActionsMenu }: CommandChatI
     })
     await queryClient.invalidateQueries({ queryKey: ['chats'] })
   }
-  
+
   return (
     <CommandItem
       className="group relative flex items-center gap-2"

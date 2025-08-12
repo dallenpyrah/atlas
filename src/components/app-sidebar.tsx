@@ -4,6 +4,8 @@ import { ChevronRight, Edit2, MessageSquare, MoreHorizontal, Plus, Search } from
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
+import { ChatHistoryItem } from '@/components/chat-history-item'
+import { CommandChatItem } from '@/components/command-chat-item'
 import { ContextSwitcher } from '@/components/context-switcher'
 import { NavUser } from '@/components/nav-user'
 import { Button } from '@/components/ui/button'
@@ -35,8 +37,6 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
 } from '@/components/ui/sidebar'
-import { ChatHistoryItem } from '@/components/chat-history-item'
-import { CommandChatItem } from '@/components/command-chat-item'
 import { useDeleteChatMutation } from '@/mutations/chat'
 import { useChats, useRecentChats } from '@/queries/chats'
 

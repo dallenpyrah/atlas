@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import type { Route } from 'next'
 import { useQueryClient } from '@tanstack/react-query'
+import type { Route } from 'next'
+import Link from 'next/link'
+import { useState } from 'react'
 import { EditableTitle } from '@/components/ui/editable-title'
 import { SidebarMenuSubButton, SidebarMenuSubItem } from '@/components/ui/sidebar'
 import { useUpdateChatMutation } from '@/mutations/chat'
@@ -44,12 +44,12 @@ export function ChatHistoryItem({ chat, ChatActionsMenu }: ChatHistoryItemProps)
             <ChatActionsMenu chatId={chat.id} />
           </div>
         ) : (
-          <Link href={`/chat/${chat.id}` as Route} className="flex items-center justify-between w-full">
+          <Link
+            href={`/chat/${chat.id}` as Route}
+            className="flex items-center justify-between w-full"
+          >
             <span className="truncate">{chat.title}</span>
-            <ChatActionsMenu
-              chatId={chat.id}
-              onEditClick={() => setIsEditing(true)}
-            />
+            <ChatActionsMenu chatId={chat.id} onEditClick={() => setIsEditing(true)} />
           </Link>
         )}
       </SidebarMenuSubButton>

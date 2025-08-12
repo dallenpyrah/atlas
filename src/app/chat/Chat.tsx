@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useChat } from '@ai-sdk/react'
@@ -212,13 +211,19 @@ type ChatInnerProps = {
   initialModel?: string
 }
 
-function ChatInner({ chatId: providedChatId, initialMessages, initialModel, userId, isNewChat }: ChatInnerProps & { userId?: string; isNewChat?: boolean }) {
+function ChatInner({
+  chatId: providedChatId,
+  initialMessages,
+  initialModel,
+  userId,
+  isNewChat,
+}: ChatInnerProps & { userId?: string; isNewChat?: boolean }) {
   const [input, setInput] = useState('')
   const [selectedModel, setSelectedModel] = useState(initialModel ?? 'openai/gpt-5')
   const [hasUpdatedUrl, setHasUpdatedUrl] = useState(Boolean(initialMessages?.length))
   const createChatMutation = useCreateChatMutation()
   const updateChatMutation = useUpdateChatMutation()
-  
+
   const actualChatIdRef = useRef<string | undefined>(providedChatId)
 
   const { messages, sendMessage, status, error } = useChat({
@@ -264,7 +269,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel, user
         console.error('Failed to create chat:', err)
         return
       }
-      
+
       window.history.replaceState({}, '', `/chat/${actualChatIdRef.current}`)
       setHasUpdatedUrl(true)
     }
@@ -277,7 +282,16 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel, user
         userId,
       },
     })
-  }, [input, isBusy, selectedModel, sendMessage, hasUpdatedUrl, userId, isNewChat, createChatMutation])
+  }, [
+    input,
+    isBusy,
+    selectedModel,
+    sendMessage,
+    hasUpdatedUrl,
+    userId,
+    isNewChat,
+    createChatMutation,
+  ])
 
   return (
     <div ref={containerRef} className="flex h-[calc(92vh)] flex-col overflow-hidden">
@@ -372,7 +386,15 @@ function Chat({ chatId, userId, isNewChat }: ChatProps) {
     return model
   })()
 
-  return <ChatInner chatId={chatId} initialMessages={initialMessages} initialModel={initialModel} userId={userId} isNewChat={isNewChat} />
+  return (
+    <ChatInner
+      chatId={chatId}
+      initialMessages={initialMessages}
+      initialModel={initialModel}
+      userId={userId}
+      isNewChat={isNewChat}
+    />
+  )
 }
 
 export { Chat }

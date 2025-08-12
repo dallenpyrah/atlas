@@ -43,6 +43,13 @@
       "when": 1754968598161,
       "tag": "0005_sharp_lady_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1755027598233,
+      "tag": "0006_motionless_lilandra",
+      "breakpoints": true
     }
   ]
 }
