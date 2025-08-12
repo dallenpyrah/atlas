@@ -1,6 +1,4 @@
-import { and, eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { spaceMember } from '@/lib/db/schema/space'
+// DB access helpers are abstracted into utils and client modules
 import {
   createNote,
   deleteNote,
@@ -12,19 +10,9 @@ import {
 } from './client'
 import type { CreateNoteInput, SearchNotesInput, UpdateNoteInput } from './schema'
 import * as validator from './validator'
+import { verifySpaceAccess } from './utils'
 
-async function verifySpaceAccess(userId: string, spaceId: string) {
-  const [membership] = await db
-    .select()
-    .from(spaceMember)
-    .where(and(eq(spaceMember.userId, userId), eq(spaceMember.spaceId, spaceId)))
-
-  if (!membership) {
-    throw new Error('Access denied: User is not a member of this space')
-  }
-
-  return membership
-}
+// Access checks moved to utils.ts
 
 export async function listPersonalNotes(userId: string) {
   return await getPersonalNotes(userId)

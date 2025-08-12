@@ -186,7 +186,8 @@ export function CreateSpaceDialog({ children, onSuccess }: CreateSpaceDialogProp
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Choose an organization to own this space. Leaving this blank creates a personal space.
+                      Choose an organization to own this space. Leaving this blank creates a
+                      personal space.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

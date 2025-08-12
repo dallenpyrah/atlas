@@ -1,6 +1,6 @@
 'use client'
 
-import { Anthropic, Google, OpenAI } from '@lobehub/icons'
+import { Anthropic, Google, OpenAI, XAI } from '@lobehub/icons'
 import { Brain } from 'lucide-react'
 import { memo } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -44,7 +44,7 @@ function getProviderIcon(provider: string): React.ComponentType<{ className?: st
     openai: OpenAI,
     anthropic: Anthropic,
     google: Google,
-    xai: Brain,
+    xai: XAI,
   }
   return iconMap[provider] || Brain
 }

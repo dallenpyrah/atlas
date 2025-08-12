@@ -1,6 +1,8 @@
 import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { note as noteTable } from '@/lib/db/schema/note'
+import { space as spaceTable, spaceMember } from '@/lib/db/schema/space'
+import { member as orgMember } from '@/lib/db/schema/organization'
 
 export async function getPersonalNotes(userId: string) {
   const notes = await db
@@ -16,6 +18,38 @@ export async function getPersonalNotes(userId: string) {
     .orderBy(desc(noteTable.isPinned), desc(noteTable.updatedAt))
 
   return notes
+}
+
+// Cross-entity helpers (DB access centralized here)
+export async function fetchSpaceByIdBasic(spaceId: string) {
+  const [space] = await db
+    .select({
+      id: spaceTable.id,
+      userId: spaceTable.userId,
+      organizationId: spaceTable.organizationId,
+    })
+    .from(spaceTable)
+    .where(eq(spaceTable.id, spaceId))
+    .limit(1)
+  return space ?? null
+}
+
+export async function fetchSpaceMembership(userId: string, spaceId: string) {
+  const [membership] = await db
+    .select()
+    .from(spaceMember)
+    .where(and(eq(spaceMember.userId, userId), eq(spaceMember.spaceId, spaceId)))
+    .limit(1)
+  return membership ?? null
+}
+
+export async function fetchOrganizationMembership(userId: string, organizationId: string) {
+  const [membership] = await db
+    .select()
+    .from(orgMember)
+    .where(and(eq(orgMember.userId, userId), eq(orgMember.organizationId, organizationId)))
+    .limit(1)
+  return membership ?? null
 }
 
 export async function getAllNotes(userId: string, spaceId?: string, organizationId?: string) {

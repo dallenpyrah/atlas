@@ -1,8 +1,4 @@
 import type { UIMessage } from 'ai'
-import { and, desc, eq, isNull } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { chat as chatTable } from '@/lib/db/schema/chat'
-import { spaceMember } from '@/lib/db/schema/space'
 import {
   createChat,
   deleteChat,
@@ -13,21 +9,16 @@ import {
   updateChat,
 } from './client'
 import type { CreateChatInput, UpdateChatInput } from './schema'
-import { getLastUserMessage } from './utils'
+import {
+  getLastUserMessage,
+  getSpaceOrganizationId,
+  verifyOrganizationMembership,
+  verifySpaceAccess,
+} from './utils'
 import * as validator from './validator'
+import { getOrganizationRootChats } from './client'
 
-async function verifySpaceAccess(userId: string, spaceId: string) {
-  const [membership] = await db
-    .select()
-    .from(spaceMember)
-    .where(and(eq(spaceMember.userId, userId), eq(spaceMember.spaceId, spaceId)))
-
-  if (!membership) {
-    throw new Error('Access denied: User is not a member of this space')
-  }
-
-  return membership
-}
+// Access check helpers moved to utils.ts
 
 export async function listPersonalChats(userId: string) {
   return await getPersonalChats(userId)
@@ -46,17 +37,7 @@ export async function listChats(
     }
 
     if (organizationId) {
-      const chats = await db
-        .select()
-        .from(chatTable)
-        .where(
-          and(
-            eq(chatTable.userId, userId),
-            eq(chatTable.organizationId, organizationId),
-            isNull(chatTable.spaceId),
-          ),
-        )
-        .orderBy(desc(chatTable.updatedAt))
+      const chats = await getOrganizationRootChats(userId, organizationId)
       return { success: true, data: chats }
     }
 
@@ -93,8 +74,15 @@ export async function getChat(chatId: string, userId: string) {
 
 export async function createNewChat(data: CreateChatInput, userId: string) {
   try {
+    let derivedOrganizationId: string | undefined
     if (data.spaceId) {
       await verifySpaceAccess(userId, data.spaceId)
+      const orgId = await getSpaceOrganizationId(data.spaceId)
+      if (orgId) derivedOrganizationId = orgId
+    }
+
+    if (data.organizationId) {
+      await verifyOrganizationMembership(userId, data.organizationId)
     }
 
     if (!validator.validateTitle(data.title)) {
@@ -104,8 +92,8 @@ export async function createNewChat(data: CreateChatInput, userId: string) {
     const newChat = await createChat({
       id: data.id,
       userId,
-      spaceId: data.spaceId,
-      organizationId: data.organizationId,
+      spaceId: data.spaceId ?? undefined,
+      organizationId: data.organizationId ?? derivedOrganizationId ?? undefined,
       title: data.title,
       metadata: data.metadata,
     })

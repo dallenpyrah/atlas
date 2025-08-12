@@ -2,6 +2,8 @@ import type { UIMessage } from 'ai'
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { chat as chatTable, message as messageTable } from '@/lib/db/schema/chat'
+import { space as spaceTable, spaceMember } from '@/lib/db/schema/space'
+import { member as orgMember } from '@/lib/db/schema/organization'
 
 export async function saveChatExchange(params: {
   user: UIMessage
@@ -79,6 +81,53 @@ export async function getAllChats(userId: string, spaceId?: string, organization
     .orderBy(desc(chatTable.updatedAt))
 
   return chats
+}
+
+export async function getOrganizationRootChats(userId: string, organizationId: string) {
+  const chats = await db
+    .select()
+    .from(chatTable)
+    .where(
+      and(
+        eq(chatTable.userId, userId),
+        eq(chatTable.organizationId, organizationId),
+        isNull(chatTable.spaceId),
+      ),
+    )
+    .orderBy(desc(chatTable.updatedAt))
+  return chats
+}
+
+// Cross-entity helpers (DB access centralized here)
+export async function fetchSpaceByIdBasic(spaceId: string) {
+  const [space] = await db
+    .select({
+      id: spaceTable.id,
+      userId: spaceTable.userId,
+      organizationId: spaceTable.organizationId,
+    })
+    .from(spaceTable)
+    .where(eq(spaceTable.id, spaceId))
+    .limit(1)
+  return space ?? null
+}
+
+export async function fetchSpaceMembership(userId: string, spaceId: string) {
+  const [membership] = await db
+    .select()
+    .from(spaceMember)
+    .where(and(eq(spaceMember.userId, userId), eq(spaceMember.spaceId, spaceId)))
+    .limit(1)
+  return membership ?? null
+}
+
+export async function fetchOrganizationMembership(userId: string, organizationId: string) {
+  const [membership] = await db
+    .select()
+    .from(orgMember)
+    .where(and(eq(orgMember.userId, userId), eq(orgMember.organizationId, organizationId)))
+    .limit(1)
+  return membership ?? null
 }
 
 export async function getChatById(chatId: string) {

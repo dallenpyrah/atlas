@@ -3,7 +3,9 @@
 import { Building2, Check, ChevronsUpDown, FolderOpen, Loader2, Plus, User } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
+import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from '@/clients/auth'
+import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -50,10 +52,15 @@ interface Context {
 }
 
 export function ContextSwitcher() {
+  const { context, setContext } = useAppContext()
   const [open, setOpen] = React.useState(false)
   const [createOrgOpen, setCreateOrgOpen] = React.useState(false)
   const [createSpaceOpen, setCreateSpaceOpen] = React.useState(false)
-  const [selectedContext, setSelectedContext] = React.useState<Context | null>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const [selectedContext, setSelectedContext] = React.useState<Context | null>(
+    (context as Context | null) ?? null,
+  )
 
   const { data: session } = useSession()
   const { data: organizations = [], isLoading: orgsLoading } = useOrganizations()
@@ -103,20 +110,20 @@ export function ContextSwitcher() {
   React.useEffect(() => {
     if (!selectedContext && session?.user) {
       if (activeOrganization) {
-        setSelectedContext({
+        const next = {
           id: activeOrganization.id,
           name: activeOrganization.name,
-          type: 'organization',
-        })
+          type: 'organization' as const,
+        }
+        setSelectedContext(next)
+        setContext(next)
       } else {
-        setSelectedContext({
-          id: 'personal',
-          name: 'Personal',
-          type: 'personal',
-        })
+        const next = { id: 'personal', name: 'Personal', type: 'personal' as const }
+        setSelectedContext(next)
+        setContext(next)
       }
     }
-  }, [activeOrganization, selectedContext, session])
+  }, [activeOrganization, selectedContext, session, setContext])
 
   const getIcon = (type: Context['type']) => {
     switch (type) {
@@ -131,12 +138,18 @@ export function ContextSwitcher() {
 
   const handleContextSelect = async (context: Context) => {
     setSelectedContext(context)
+    setContext(context)
     setOpen(false)
 
     if (context.type === 'organization') {
       await setActiveOrganization.mutateAsync({ organizationId: context.id })
     } else if (context.type === 'personal') {
       await setActiveOrganization.mutateAsync({ organizationId: null })
+    }
+
+    // If currently on a specific chat page, navigate back to /chat for the new context
+    if (pathname && pathname.startsWith('/chat/') && pathname !== '/chat') {
+      router.replace('/chat', { scroll: false })
     }
   }
 

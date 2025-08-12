@@ -2,6 +2,8 @@ import { and, desc, eq, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { member } from '@/lib/db/schema/organization'
 import { spaceMember, space as spaceTable } from '@/lib/db/schema/space'
+import * as validator from './validator'
+import { verifyUserCanModifySpace } from './utils'
 import type { CreateSpaceInput, UpdateSpaceInput } from './schema'
 
 function generateSlugFromName(name: string): string {
@@ -77,11 +79,7 @@ export async function createNewSpace(input: CreateSpaceInput, userId: string) {
         .from(member)
         .where(and(eq(member.userId, userId), eq(member.organizationId, input.organizationId)))
         .limit(1)
-
-      if (!membership) {
-        return { success: false, error: 'You are not a member of this organization' }
-      }
-
+      if (!membership) return { success: false, error: 'You are not a member of this organization' }
       if (membership.role !== 'owner' && membership.role !== 'admin') {
         return {
           success: false,
@@ -90,14 +88,20 @@ export async function createNewSpace(input: CreateSpaceInput, userId: string) {
       }
     }
 
-    const slug =
-      input.slug || (await generateUniqueSlug(input.name, userId, input.organizationId || undefined))
+    if (!validator.validateName(input.name)) {
+      return { success: false, error: 'Invalid name' }
+    }
 
+    const slug =
+      input.slug ||
+      (await generateUniqueSlug(input.name, userId, input.organizationId || undefined))
+
+    if (input.slug && !validator.validateSlug(input.slug)) {
+      return { success: false, error: 'Invalid slug' }
+    }
     if (input.slug) {
       const isUnique = await checkSlugUniqueness(slug, userId, input.organizationId || undefined)
-      if (!isUnique) {
-        return { success: false, error: 'Slug already exists in this context' }
-      }
+      if (!isUnique) return { success: false, error: 'Slug already exists in this context' }
     }
 
     const now = new Date()
@@ -180,44 +184,17 @@ export async function getSpaceById(spaceId: string, userId: string) {
 
 export async function updateSpace(spaceId: string, updates: UpdateSpaceInput, userId: string) {
   try {
-    const spaceResult = await getSpaceById(spaceId, userId)
-    if (!spaceResult.success || !spaceResult.data) {
-      return { success: false, error: spaceResult.error || 'Space not found' }
-    }
-
-    const space = spaceResult.data
-
-    if (space.organizationId) {
-      const [membership] = await db
-        .select()
-        .from(member)
-        .where(and(eq(member.userId, userId), eq(member.organizationId, space.organizationId)))
-        .limit(1)
-
-      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
-        return { success: false, error: 'You do not have permission to update this space' }
-      }
-    } else if (space.userId !== userId) {
-      const [spaceMembership] = await db
-        .select()
-        .from(spaceMember)
-        .where(and(eq(spaceMember.userId, userId), eq(spaceMember.spaceId, spaceId)))
-        .limit(1)
-
-      if (!spaceMembership || spaceMembership.role !== 'owner') {
-        return { success: false, error: 'You do not have permission to update this space' }
-      }
-    }
+    const verification = await verifyUserCanModifySpace(userId, spaceId)
+    const space = verification.space
 
     if (updates.slug && updates.slug !== space.slug) {
+      if (!validator.validateSlug(updates.slug)) return { success: false, error: 'Invalid slug' }
       const isUnique = await checkSlugUniqueness(
         updates.slug,
         space.userId || userId,
         space.organizationId || undefined,
       )
-      if (!isUnique) {
-        return { success: false, error: 'Slug already exists in this context' }
-      }
+      if (!isUnique) return { success: false, error: 'Slug already exists in this context' }
     }
 
     const now = new Date()
@@ -239,25 +216,14 @@ export async function updateSpace(spaceId: string, updates: UpdateSpaceInput, us
 
 export async function deleteSpace(spaceId: string, userId: string) {
   try {
-    const spaceResult = await getSpaceById(spaceId, userId)
-    if (!spaceResult.success || !spaceResult.data) {
-      return { success: false, error: spaceResult.error || 'Space not found' }
-    }
-
-    const space = spaceResult.data
-
-    if (space.organizationId) {
-      const [membership] = await db
-        .select()
-        .from(member)
-        .where(and(eq(member.userId, userId), eq(member.organizationId, space.organizationId)))
-        .limit(1)
-
-      if (!membership || membership.role !== 'owner') {
-        return { success: false, error: 'Only organization owners can delete spaces' }
-      }
-    } else if (space.userId !== userId) {
-      return { success: false, error: 'You do not have permission to delete this space' }
+    const verification = await verifyUserCanModifySpace(userId, spaceId)
+    const space = verification.space
+    if (
+      space.organizationId &&
+      verification.membership &&
+      verification.membership.role !== 'owner'
+    ) {
+      return { success: false, error: 'Only organization owners can delete spaces' }
     }
 
     await db.delete(spaceTable).where(eq(spaceTable.id, spaceId))

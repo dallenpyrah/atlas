@@ -2,14 +2,14 @@ import { z } from 'zod'
 
 export const spaceIdSchema = z.string().uuid('Invalid space ID format')
 
-export const organizationIdSchema = z.string().uuid('Invalid organization ID format')
+export const organizationIdSchema = z.string().min(1, 'Invalid organization ID')
 
 export const chatIdSchema = z.string().uuid('Invalid chat ID format')
 
 export const createChatSchema = z.object({
   id: z.string().uuid('Invalid chat ID format').optional(),
-  spaceId: z.string().uuid('Invalid space ID format').optional(),
-  organizationId: z.string().uuid('Invalid organization ID format').optional(),
+  spaceId: z.string().uuid('Invalid space ID format').nullable().optional(),
+  organizationId: organizationIdSchema.nullable().optional(),
   title: z
     .string()
     .min(1, 'Title is required')

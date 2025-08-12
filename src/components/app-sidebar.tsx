@@ -1,13 +1,14 @@
 'use client'
 
-import { ChevronRight, Edit2, MessageSquare, MoreHorizontal, Plus, Search } from 'lucide-react'
+import { ChevronRight, MessageSquare, MoreHorizontal, Pencil, Plus, Search } from 'lucide-react'
+import type { Route } from 'next'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
-import { ChatHistoryItem } from '@/components/chat-history-item'
-import { CommandChatItem } from '@/components/command-chat-item'
 import { ContextSwitcher } from '@/components/context-switcher'
 import { NavUser } from '@/components/nav-user'
+import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
@@ -15,6 +16,7 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
+  CommandItem,
   CommandList,
 } from '@/components/ui/command'
 import {
@@ -36,8 +38,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
-import { useDeleteChatMutation } from '@/mutations/chat'
+import { useDeleteChatMutation, useUpdateChatMutation } from '@/mutations/chat'
+import { EditableTitle } from '@/components/ui/editable-title'
+import { useQueryClient } from '@tanstack/react-query'
 import { useChats, useRecentChats } from '@/queries/chats'
 
 function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -62,7 +68,10 @@ function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function useHistoryItems() {
-  const { data: chats } = useRecentChats(5)
+  const { context } = useAppContext()
+  const spaceId = context?.type === 'space' ? context.id : null
+  const organizationId = context?.type === 'organization' ? context.id : null
+  const { data: chats } = useRecentChats(5, { spaceId, organizationId })
   return (chats ?? []).map((c) => ({ id: c.id, title: c.title ?? 'Untitled' }))
 }
 
@@ -70,12 +79,12 @@ function ChatActionsMenu({
   chatId,
   className,
   isInCommandItem,
-  onEditClick,
+  onEdit,
 }: {
   chatId: string
   className?: string
   isInCommandItem?: boolean
-  onEditClick?: () => void
+  onEdit?: (chatId: string) => void
 }) {
   const { mutateAsync, isPending } = useDeleteChatMutation()
   const router = useRouter()
@@ -107,27 +116,17 @@ function ChatActionsMenu({
           Actions
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {onEditClick && (
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault()
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              onEditClick()
-            }}
-          >
-            <Edit2 className="size-4" />
-            Edit
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem
+          onSelect={() => {
+            onEdit?.(chatId)
+          }}
+        >
+          <Pencil className="size-4 mr-2" />
+          Edit
+        </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
-          onSelect={(e) => {
-            e.preventDefault()
-          }}
-          onClick={async (e) => {
-            e.stopPropagation()
+          onSelect={async () => {
             try {
               await mutateAsync({ chatId })
               if (pathname === `/chat/${chatId}`) {
@@ -148,14 +147,34 @@ function ChatActionsMenu({
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const historyItems = useHistoryItems()
   const router = useRouter()
-  function handleNewChatClick() {
-    router.push('/chat', { scroll: false })
+  const { context } = useAppContext()
+  const [editingId, setEditingId] = React.useState<string | null>(null)
+  const updateChat = useUpdateChatMutation()
+  const queryClient = useQueryClient()
+
+  const saveTitle = React.useCallback(
+    async (chatId: string, newTitle: string) => {
+      const trimmed = newTitle.trim()
+      if (!trimmed) {
+        setEditingId(null)
+        return
+      }
+      await updateChat.mutateAsync({ chatId, updates: { title: trimmed } })
+      setEditingId(null)
+      await queryClient.invalidateQueries({ queryKey: ['chats'] })
+    },
+    [queryClient, updateChat],
+  )
+  async function handleNewChatClick() {
+    try {
+      router.push(`/chat`, { scroll: false })
+    } catch (e) {}
   }
 
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
-  const selectedSpaceId: string | null = null
-  const selectedOrgId: string | null = null
+  const selectedSpaceId: string | null = context?.type === 'space' ? context.id : null
+  const selectedOrgId: string | null = context?.type === 'organization' ? context.id : null
   const { data: searchResults } = useChats({
     spaceId: selectedSpaceId,
     organizationId: selectedOrgId,
@@ -229,11 +248,41 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {historyItems.map((chat) => (
-                        <ChatHistoryItem
-                          key={chat.id}
-                          chat={chat}
-                          ChatActionsMenu={ChatActionsMenu}
-                        />
+                        <SidebarMenuSubItem key={chat.id} className="group/menu-sub-item">
+                          <SidebarMenuSubButton asChild>
+                            {editingId === chat.id ? (
+                              <div className="flex items-center justify-between w-full gap-2">
+                                <EditableTitle
+                                  title={chat.title}
+                                  isEditing
+                                  onEditingChange={(editing) =>
+                                    setEditingId(editing ? chat.id : null)
+                                  }
+                                  onSave={async (newTitle: string) => {
+                                    await saveTitle(chat.id, newTitle)
+                                  }}
+                                  className="flex-1 min-w-0"
+                                  inputClassName="truncate"
+                                />
+                                <ChatActionsMenu
+                                  chatId={chat.id}
+                                  onEdit={() => setEditingId(chat.id)}
+                                />
+                              </div>
+                            ) : (
+                              <Link
+                                href={`/chat/${chat.id}` as Route}
+                                className="flex items-center justify-between w-full gap-2"
+                              >
+                                <span className="truncate">{chat.title}</span>
+                                <ChatActionsMenu
+                                  chatId={chat.id}
+                                  onEdit={() => setEditingId(chat.id)}
+                                />
+                              </Link>
+                            )}
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                       ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
@@ -251,14 +300,46 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Chats">
-            {(searchResults ?? []).map((chat) => (
-              <CommandChatItem
-                key={chat.id}
-                chat={chat}
-                onClose={() => setIsSearchOpen(false)}
-                ChatActionsMenu={ChatActionsMenu}
-              />
-            ))}
+            {(searchResults ?? []).map((chat) => {
+              const title = chat.title ?? 'Untitled'
+              const value = `${title} | ${chat.id}`
+              const isEditing = editingId === chat.id
+              return (
+                <CommandItem
+                  className="group relative flex items-center gap-2"
+                  id={`cmd-chat-${chat.id}`}
+                  value={value}
+                  key={chat.id}
+                  onSelect={() => {
+                    if (!isEditing) {
+                      setIsSearchOpen(false)
+                      router.push(`/chat/${chat.id}`)
+                    }
+                  }}
+                >
+                  {isEditing ? (
+                    <EditableTitle
+                      title={title}
+                      isEditing
+                      onEditingChange={(editing) => setEditingId(editing ? chat.id : null)}
+                      onSave={async (newTitle: string) => {
+                        await saveTitle(chat.id, newTitle)
+                      }}
+                      className="flex-1 min-w-0"
+                      inputClassName="truncate"
+                    />
+                  ) : (
+                    <span className="truncate">{title}</span>
+                  )}
+                  <ChatActionsMenu
+                    chatId={chat.id}
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    isInCommandItem
+                    onEdit={() => setEditingId(chat.id)}
+                  />
+                </CommandItem>
+              )
+            })}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

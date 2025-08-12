@@ -5,6 +5,7 @@ import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 import { AlertTriangle, ArrowUp, Copy } from 'lucide-react'
 import { memo, useCallback, useRef, useState } from 'react'
 import { ModelSelector } from '@/components/chat/model-selector'
+import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
 import { Loader } from '@/components/ui/loader'
@@ -218,6 +219,7 @@ function ChatInner({
   userId,
   isNewChat,
 }: ChatInnerProps & { userId?: string; isNewChat?: boolean }) {
+  const { context } = useAppContext()
   const [input, setInput] = useState('')
   const [selectedModel, setSelectedModel] = useState(initialModel ?? 'openai/gpt-5')
   const [hasUpdatedUrl, setHasUpdatedUrl] = useState(Boolean(initialMessages?.length))
@@ -264,6 +266,13 @@ function ChatInner({
           id: actualChatIdRef.current,
           title: messageText.slice(0, 100),
           metadata: { model: selectedModel },
+          spaceId: context?.type === 'space' ? context.id : null,
+          organizationId:
+            context?.type === 'organization'
+              ? context.id
+              : context?.type === 'space' && context.organizationId
+                ? context.organizationId
+                : null,
         })
       } catch (err) {
         console.error('Failed to create chat:', err)
@@ -291,6 +300,7 @@ function ChatInner({
     userId,
     isNewChat,
     createChatMutation,
+    context,
   ])
 
   return (
