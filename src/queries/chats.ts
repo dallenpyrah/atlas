@@ -30,4 +30,28 @@ export function useChatById(chatId?: string) {
   })
 }
 
+export function useChats(params?: {
+  spaceId?: string | null
+  organizationId?: string | null
+  search?: string
+  limit?: number
+}) {
+  return useQuery<Chat[]>({
+    queryKey: ['chats', 'list', params],
+    queryFn: async () => {
+      const list = await chatService.listChats({
+        spaceId: params?.spaceId ?? null,
+        organizationId: params?.organizationId ?? null,
+      })
+      const filtered = params?.search
+        ? list.filter((c) =>
+            (c.title ?? 'Untitled').toLowerCase().includes(params.search!.toLowerCase()),
+          )
+        : list
+      return typeof params?.limit === 'number' ? filtered.slice(0, params.limit) : filtered
+    },
+    staleTime: 60_000,
+  })
+}
+
 

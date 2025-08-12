@@ -2,7 +2,7 @@
 
 import { useChat } from '@ai-sdk/react'
 import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
-import { AlertTriangle, ArrowUp, Copy, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { AlertTriangle, ArrowUp, Copy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { memo, useCallback, useRef, useState } from 'react'
 import { ModelSelector } from '@/components/chat/model-selector'
@@ -88,18 +88,12 @@ export const MessageComponent = memo(
               )}
             >
               <MessageAction tooltip="Copy" delayDuration={100}>
-                <Button variant="ghost" size="icon">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigator.clipboard.writeText(messageText)}
+                >
                   <Copy />
-                </Button>
-              </MessageAction>
-              <MessageAction tooltip="Upvote" delayDuration={100}>
-                <Button variant="ghost" size="icon">
-                  <ThumbsUp />
-                </Button>
-              </MessageAction>
-              <MessageAction tooltip="Downvote" delayDuration={100}>
-                <Button variant="ghost" size="icon">
-                  <ThumbsDown />
                 </Button>
               </MessageAction>
             </MessageActions>
@@ -115,7 +109,11 @@ export const MessageComponent = memo(
               )}
             >
               <MessageAction tooltip="Copy" delayDuration={100}>
-                <Button variant="ghost" size="icon">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigator.clipboard.writeText(messageText)}
+                >
                   <Copy />
                 </Button>
               </MessageAction>
@@ -217,9 +215,7 @@ type ChatInnerProps = {
 function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: ChatInnerProps) {
   const router = useRouter()
   const [input, setInput] = useState('')
-  const [selectedModel, setSelectedModel] = useState(
-    initialModel || 'gpt-5',
-  )
+  const [selectedModel, setSelectedModel] = useState(initialModel ?? 'openai/gpt-5')
   const [chatId, setChatId] = useState<string | undefined>(providedChatId)
   const createChatMutation = useCreateChatMutation()
   const updateChatMutation = useUpdateChatMutation()
@@ -236,10 +232,11 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
 
   const handleModelChange = useCallback(
     async (model: string) => {
-      setSelectedModel(model)
+      const nextModel = model && model.trim() ? model : 'gpt-5'
+      setSelectedModel(nextModel)
       if (chatId) {
         try {
-          await updateChatMutation.mutateAsync({ chatId, updates: { metadata: { model } } })
+          await updateChatMutation.mutateAsync({ chatId, updates: { metadata: { model: nextModel } } })
         } catch (_err) {
           // error toast handled by mutation
         }
@@ -259,7 +256,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
         const title = messageText.length > 100 ? `${messageText.substring(0, 97)}...` : messageText
         const result = await createChatMutation.mutateAsync({
           title,
-          metadata: { model: selectedModel },
+          metadata: { model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5' },
         })
         const newId = result.id
         setChatId(newId)
@@ -268,7 +265,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
         sendMessage({
           text: messageText,
           metadata: {
-            model: selectedModel,
+            model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5',
             chatId: newId,
           },
         })
@@ -280,7 +277,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
       sendMessage({
         text: messageText,
         metadata: { 
-          model: selectedModel,
+          model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5',
           chatId,
         },
       })

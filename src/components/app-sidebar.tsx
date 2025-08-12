@@ -5,7 +5,16 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import type * as React from 'react'
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { useChats } from '@/queries/chats'
+import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
 import { useRecentChats } from '@/queries/chats'
 import { ContextSwitcher } from '@/components/context-switcher'
@@ -41,7 +50,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     } catch (e) {
     }
   }
+
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false)
+  const [search, setSearch] = React.useState('')
+  // TODO: wire these IDs to real selected context from a store
+  const selectedSpaceId: string | null = null
+  const selectedOrgId: string | null = null
+  const { data: searchResults } = useChats({
+    spaceId: selectedSpaceId,
+    organizationId: selectedOrgId,
+    search,
+    limit: 20,
+  })
   return (
+    <>
     <Sidebar variant="inset" {...props}>
       <SidebarHeader className="my-1">
         <SidebarMenu>
@@ -68,7 +90,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Button variant="ghost" type="button" className='justify-start'>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  className='justify-start'
+                  onClick={() => setIsSearchOpen(true)}
+                >
                   <Search className="size-4" />
                   <span>Search</span>
                 </Button>
@@ -81,10 +108,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <Collapsible defaultOpen={true} asChild>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="History">
-                  <Button variant="ghost" type="button" className='justify-start'>
-                    <MessageSquare className="size-4" />
-                    <span>History</span>
-                  </Button>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" type="button" className='justify-start'>
+                      <MessageSquare className="size-4" />
+                      <span>History</span>
+                    </Button>
+                  </CollapsibleTrigger>
                 </SidebarMenuButton>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuAction className="data-[state=open]:rotate-90">
@@ -114,5 +143,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser />
       </SidebarFooter>
     </Sidebar>
+    <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+      <CommandInput
+        placeholder="Search chats..."
+        value={search}
+        onValueChange={setSearch}
+      />
+      <CommandList>
+        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="Chats">
+          {(searchResults ?? []).map((chat) => {
+            const title = chat.title ?? 'Untitled'
+            const value = `${title} | ${chat.id}`
+            return (
+              <CommandItem
+                id={`cmd-chat-${chat.id}`}
+                value={value}
+                key={chat.id}
+                onSelect={() => {
+                  setIsSearchOpen(false)  
+                  router.push(`/chat/${chat.id}`)
+                }}
+              >
+                {title}
+              </CommandItem>
+            )
+          })}
+        </CommandGroup>
+      </CommandList>
+    </CommandDialog>
+    </>
   )
 }
