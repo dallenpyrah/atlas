@@ -3,8 +3,8 @@
 import { useChat } from '@ai-sdk/react'
 import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 import { AlertTriangle, ArrowUp, Copy } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { memo, useCallback, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ModelSelector } from '@/components/chat/model-selector'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
@@ -260,7 +260,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
         })
         const newId = result.id
         setChatId(newId)
-        router.push(`/chat/${newId}`, { scroll: false })
+        router.replace(`/chat/${newId}`, undefined, { shallow: true })
 
         sendMessage({
           text: messageText,
@@ -282,7 +282,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
         },
       })
     }
-  }, [input, isBusy, chatId, selectedModel, sendMessage, router, createChatMutation])
+  }, [input, isBusy, chatId, selectedModel, sendMessage, createChatMutation, router])
 
   return (
     <div ref={containerRef} className="flex h-[calc(92vh)] flex-col overflow-hidden">

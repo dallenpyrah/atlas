@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, MessageSquare, Plus, Search } from 'lucide-react'
+import { ChevronRight, MessageSquare, MoreHorizontal, Plus, Search } from 'lucide-react'
 import type { Route } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -17,9 +17,17 @@ import { useChats } from '@/queries/chats'
 import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
 import { useRecentChats } from '@/queries/chats'
+import { useDeleteChatMutation } from '@/mutations/chat'
 import { ContextSwitcher } from '@/components/context-switcher'
 import { NavUser } from '@/components/nav-user'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +46,73 @@ import {
 function useHistoryItems() {
   const { data: chats } = useRecentChats(5)
   return (chats ?? []).map((c) => ({ id: c.id, title: c.title ?? 'Untitled' }))
+}
+
+function ChatActionsMenu({
+  chatId,
+  className,
+  isInCommandItem,
+}: {
+  chatId: string
+  className?: string
+  isInCommandItem?: boolean
+}) {
+  const router = useRouter()
+  const { mutateAsync, isPending } = useDeleteChatMutation()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Open chat actions"
+          className={`size-7 p-0 text-muted-foreground border border-transparent hover:border-border ${className ?? ''}`}
+          onMouseDown={(e) => {
+            if (isInCommandItem) {
+              e.preventDefault()
+            }
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side={isInCommandItem ? 'right' : 'right'} className="w-40">
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault()
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+            router.push(`/chat/${chatId}`)
+          }}
+        >
+          Open Chat
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={(e) => {
+            e.preventDefault()
+          }}
+          onClick={async (e) => {
+            e.stopPropagation()
+            try {
+              await mutateAsync({ chatId })
+            } catch (_) {
+              // toast handled in hook
+            }
+          }}
+          disabled={isPending}
+        >
+          Delete Chat
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -124,12 +199,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <CollapsibleContent>
                   <SidebarMenuSub>
                     {historyItems.map((chat) => (
-                      <SidebarMenuSubItem key={chat.id}>
+                      <SidebarMenuSubItem key={chat.id} className="group/menu-sub-item">
                         <SidebarMenuSubButton asChild>
-                          <Link href={`/chat/${chat.id}` as Route}>
-                            <span className="truncate">{chat.title}</span>
-                          </Link>
+                          <div className="flex items-center justify-between w-full"> 
+                            <Link href={`/chat/${chat.id}` as Route}>
+                              <span className="truncate">{chat.title}</span>
+                            </Link>
+                          <ChatActionsMenu
+                          chatId={chat.id}
+                        />
+                        </div>
                         </SidebarMenuSubButton>
+  
                       </SidebarMenuSubItem>
                     ))}
                   </SidebarMenuSub>
@@ -157,6 +238,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             const value = `${title} | ${chat.id}`
             return (
               <CommandItem
+                className="group relative flex items-center gap-2"
                 id={`cmd-chat-${chat.id}`}
                 value={value}
                 key={chat.id}
@@ -166,6 +248,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 }}
               >
                 {title}
+                <ChatActionsMenu chatId={chat.id} className="absolute right-2 top-1/2 -translate-y-1/2" isInCommandItem />
               </CommandItem>
             )
           })}
@@ -175,3 +258,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </>
   )
 }
+
+
+// legacy inline delete buttons removed in favor of ChatActionsMenu
+
+// TrashIcon not used in current menu approach

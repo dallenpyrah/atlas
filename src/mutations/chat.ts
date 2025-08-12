@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { chatService, type CreateChatParams, type Chat } from '@/services/chat'
 
@@ -44,6 +44,34 @@ export function useUpdateChatMutation(
   return useMutation<UpdateChatResult, Error, UpdateChatParams>({
     mutationKey: ['chats', 'update'],
     mutationFn: ({ chatId, updates }: UpdateChatParams) => chatService.updateChat(chatId, updates),
+    ...merged,
+  })
+}
+
+type DeleteChatParams = { chatId: string }
+type DeleteChatResult = { id: string }
+
+export function useDeleteChatMutation(
+  options?: UseMutationOptions<DeleteChatResult, Error, DeleteChatParams>,
+) {
+  const queryClient = useQueryClient()
+
+  const merged: UseMutationOptions<DeleteChatResult, Error, DeleteChatParams> = {
+    ...(options || {}),
+    onSuccess: (data, vars, ctx) => {
+      // Invalidate lists and recent caches
+      void queryClient.invalidateQueries({ queryKey: ['chats'] })
+      options?.onSuccess?.(data, vars, ctx)
+    },
+    onError: (error, vars, ctx) => {
+      toast.error(error.message || 'Failed to delete chat')
+      options?.onError?.(error, vars, ctx)
+    },
+  }
+
+  return useMutation<DeleteChatResult, Error, DeleteChatParams>({
+    mutationKey: ['chats', 'delete'],
+    mutationFn: ({ chatId }: DeleteChatParams) => chatService.deleteChat(chatId),
     ...merged,
   })
 }

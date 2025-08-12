@@ -69,6 +69,13 @@ export const chatService = {
     })
     return handleJsonResponse(res)
   },
+
+  async deleteChat(chatId: string): Promise<{ id: string }> {
+    const res = await fetch(`/api/chat/${chatId}`, {
+      method: 'DELETE',
+    })
+    return handleJsonResponse(res)
+  },
 }
 
 export type { CreateChatParams, Chat, ChatWithMessages }

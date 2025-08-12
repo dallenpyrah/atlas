@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { openCustomerPortal } from '@/clients/polar'
 
 interface CustomerPortalButtonProps {
@@ -10,11 +11,13 @@ interface CustomerPortalButtonProps {
 
 export function CustomerPortalButton({ children, className }: CustomerPortalButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleOpenPortal = async () => {
     setIsLoading(true)
     try {
-      await openCustomerPortal()
+      const data = await openCustomerPortal()
+      if (data?.url) router.push(data.url)
     } catch (error) {
     } finally {
       setIsLoading(false)

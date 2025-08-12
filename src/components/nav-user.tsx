@@ -1,8 +1,9 @@
-'use client'
+ 'use client'
 
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from 'lucide-react'
+import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles, Moon, Sun, Monitor } from 'lucide-react'
 import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -13,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -26,6 +28,7 @@ export function NavUser() {
   const { isMobile } = useSidebar()
   const router = useRouter()
   const { data: session, isLoading } = useCurrentUser()
+  const { theme, setTheme } = useTheme()
   const signOutMutation = useSignOutMutation({
     onSuccess: () => {
       router.push('/login' as Route)
@@ -120,6 +123,29 @@ export function NavUser() {
                 <Bell />
                 Notifications
               </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Theme</DropdownMenuLabel>
+              <div className="px-2 py-1.5">
+                <ToggleGroup
+                  type="single"
+                  value={(theme ?? 'system') as string}
+                  onValueChange={(value) => value && setTheme(value)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ToggleGroupItem value="system" aria-label="System theme">
+                    <Monitor className="size-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="light" aria-label="Light theme">
+                    <Sun className="size-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="dark" aria-label="Dark theme">
+                    <Moon className="size-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

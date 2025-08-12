@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createCheckoutSession, createCheckoutSessionBySlug } from '@/clients/polar'
 
 interface CheckoutButtonProps {
@@ -12,6 +13,7 @@ interface CheckoutButtonProps {
 
 export function CheckoutButton({ productId, slug, children, className }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleCheckout = async () => {
     if (!productId && !slug) {
@@ -21,9 +23,11 @@ export function CheckoutButton({ productId, slug, children, className }: Checkou
     setIsLoading(true)
     try {
       if (slug) {
-        await createCheckoutSessionBySlug(slug)
+        const data = await createCheckoutSessionBySlug(slug)
+        if (data?.url) router.push(data.url)
       } else if (productId) {
-        await createCheckoutSession(productId)
+        const data = await createCheckoutSession(productId)
+        if (data?.url) router.push(data.url)
       }
     } catch (error) {
     } finally {

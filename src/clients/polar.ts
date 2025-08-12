@@ -15,10 +15,6 @@ export async function createCheckoutSession(productId: string) {
     throw new Error(result.error.message)
   }
 
-  if (result.data?.url) {
-    window.location.href = result.data.url
-  }
-
   return result.data
 }
 
@@ -31,10 +27,6 @@ export async function createCheckoutSessionBySlug(slug: string) {
     throw new Error(result.error.message)
   }
 
-  if (result.data?.url) {
-    window.location.href = result.data.url
-  }
-
   return result.data
 }
 
@@ -43,10 +35,6 @@ export async function openCustomerPortal() {
 
   if (result.error) {
     throw new Error(result.error.message)
-  }
-
-  if (result.data?.url) {
-    window.location.href = result.data.url
   }
 
   return result.data
