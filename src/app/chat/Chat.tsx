@@ -13,6 +13,7 @@ import { Message, MessageAction, MessageActions, MessageContent } from '@/compon
 import { PromptInput, PromptInputActions, PromptInputTextarea } from '@/components/ui/prompt-input'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ui/reasoning'
 import { ScrollButton } from '@/components/ui/scroll-button'
+import { Tool, type ToolPart } from '@/components/ui/tool'
 import { cn } from '@/lib/utils'
 import { useCreateChatMutation, useUpdateChatMutation } from '@/mutations/chat'
 import { useChatById } from '@/queries/chats'
@@ -32,20 +33,100 @@ function getMessageText(message: UIMessage): string {
   )
 }
 
-function getMessageReasoning(message: UIMessage): string {
-  return (
-    message?.parts
-      ?.filter((part: UIMessagePart<UIDataTypes, UITools>) => part.type === 'reasoning')
-      .map((part: UIMessagePart<UIDataTypes, UITools> & { text: string }) => part.text)
-      .join('') ?? ''
-  )
+function convertToToolPart(part: any): ToolPart | null {
+  if (part.type === 'tool-call') {
+    return {
+      type: part.toolName || 'unknown',
+      state: 'input-available',
+      input: part.args || {},
+      toolCallId: part.toolCallId,
+    }
+  } else if (part.type === 'tool-result') {
+    return {
+      type: part.toolName || 'unknown',
+      state: part.isError ? 'output-error' : 'output-available',
+      input: {},
+      output: part.isError ? undefined : part.result,
+      errorText: part.isError
+        ? typeof part.result === 'string'
+          ? part.result
+          : 'Tool execution failed'
+        : undefined,
+      toolCallId: part.toolCallId,
+    }
+  } else if (
+    part.type?.startsWith('tool-') &&
+    part.type !== 'tool-call' &&
+    part.type !== 'tool-result'
+  ) {
+    return {
+      type: part.type.replace('tool-', ''),
+      state: part.state || 'input-available',
+      input: part.input || {},
+      output: part.output,
+      errorText: part.errorText,
+      toolCallId: part.toolCallId,
+    }
+  }
+  return null
+}
+
+function renderMessagePart(part: UIMessagePart<UIDataTypes, UITools>, index: number, isLastMessage: boolean, isStreaming: boolean): React.ReactNode {
+  switch (part.type) {
+    case 'text':
+      const textPart = part as UIMessagePart<UIDataTypes, UITools> & { text: string }
+      return textPart.text ? (
+        <MessageContent
+          key={index}
+          className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0"
+          markdown
+        >
+          {textPart.text}
+        </MessageContent>
+      ) : null
+
+    case 'reasoning':
+      const reasoningPart = part as UIMessagePart<UIDataTypes, UITools> & { text: string }
+      return reasoningPart.text ? (
+        <Reasoning key={index} isStreaming={isLastMessage && isStreaming}>
+          <ReasoningTrigger
+            className="mb-1"
+            textClassName="text-muted-foreground hover:underline"
+          >
+            Reasoning
+          </ReasoningTrigger>
+          <ReasoningContent
+            markdown
+            className="ml-2 border-l border-l-slate-200 px-2 pb-1 text-muted-foreground dark:border-l-slate-700"
+            contentClassName="prose-sm"
+          >
+            {reasoningPart.text}
+          </ReasoningContent>
+        </Reasoning>
+      ) : null
+
+    case 'tool-call':
+    case 'tool-result':
+    default:
+      if (part.type === 'tool-call' || part.type === 'tool-result' || part.type?.startsWith('tool-')) {
+        const toolPart = convertToToolPart(part)
+        if (toolPart) {
+          return (
+            <Tool
+              key={`${toolPart.toolCallId}-${index}`}
+              toolPart={toolPart}
+              defaultOpen={isLastMessage && isStreaming}
+            />
+          )
+        }
+      }
+      return null
+  }
 }
 
 export const MessageComponent = memo(
   ({ message, isLastMessage, isStreaming }: MessageComponentProps) => {
     const isAssistant = message?.role === 'assistant'
-    const messageText = getMessageText(message)
-    const reasoningText = getMessageReasoning(message)
 
     return (
       <Message
@@ -56,30 +137,9 @@ export const MessageComponent = memo(
       >
         {isAssistant ? (
           <div className="group flex w-full flex-col gap-0 space-y-2">
-            {reasoningText && (
-              <Reasoning isStreaming={isLastMessage && isStreaming}>
-                <ReasoningTrigger
-                  className="mb-1"
-                  textClassName="text-muted-foreground hover:underline"
-                >
-                  Reasoning
-                </ReasoningTrigger>
-                <ReasoningContent
-                  markdown
-                  className="ml-2 border-l border-l-slate-200 px-2 pb-1 text-muted-foreground dark:border-l-slate-700"
-                  contentClassName="prose-sm"
-                >
-                  {reasoningText}
-                </ReasoningContent>
-              </Reasoning>
+            {message.parts?.map((part, index) => 
+              renderMessagePart(part, index, isLastMessage, isStreaming)
             )}
-
-            <MessageContent
-              className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0"
-              markdown
-            >
-              {messageText}
-            </MessageContent>
 
             <MessageActions
               className={cn(
@@ -91,7 +151,7 @@ export const MessageComponent = memo(
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigator.clipboard.writeText(messageText)}
+                  onClick={() => navigator.clipboard.writeText(getMessageText(message))}
                 >
                   <Copy />
                 </Button>
@@ -101,7 +161,7 @@ export const MessageComponent = memo(
         ) : (
           <div className="group flex w-full flex-col items-end gap-1">
             <MessageContent className="bg-muted text-foreground max-w-[85%] px-5 py-2.5 whitespace-pre-wrap sm:max-w-[75%]">
-              {messageText}
+              {getMessageText(message)}
             </MessageContent>
             <MessageActions
               className={cn(
@@ -112,7 +172,7 @@ export const MessageComponent = memo(
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigator.clipboard.writeText(messageText)}
+                  onClick={() => navigator.clipboard.writeText(getMessageText(message))}
                 >
                   <Copy />
                 </Button>

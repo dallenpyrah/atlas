@@ -1,4 +1,4 @@
-import { type Tool, tool } from 'ai'
+import { tool, type Tool } from 'ai'
 import { z } from 'zod'
 import Exa from 'exa-js'
 
@@ -8,6 +8,13 @@ export type ExaTools =
   | 'searchWikipedia'
   | 'searchReddit'
   | 'searchNews'
+
+type UrlResult = {
+  url: string
+  title?: string | null
+  snippet?: string | null
+  publishedDate?: string | null
+}
 
 export const exaTools = (
   {
@@ -28,15 +35,14 @@ export const exaTools = (
     excludeTools,
   }: {
     excludeTools?: ExaTools[]
-  }
+  },
 ): Partial<Record<ExaTools, Tool>> => {
   const exa = new Exa(apiKey)
 
   const tools: Partial<Record<ExaTools, Tool>> = {
-    searchUrls: tool({
-      description:
-        'Based on a query returns a list of URLs that are relevant to the query.',
-      parameters: z.object({
+    searchUrls: tool<{ query: string }, UrlResult[]>({
+      description: 'Based on a query returns a list of URLs that are relevant to the query.',
+      inputSchema: z.object({
         query: z.string().describe('The query to search for'),
       }),
       execute: async ({ query }) => {
@@ -46,57 +52,75 @@ export const exaTools = (
           includeDomains,
           excludeDomains,
         })
-        return results
+        return results.map((r: any) => ({
+          url: String(r?.url ?? ''),
+          title: r?.title ?? null,
+          snippet: r?.text ?? null,
+          publishedDate: r?.publishedDate ?? null,
+        }))
       },
     }),
-    searchForUrlsContent: tool({
-      description:
-        'Retrieve the contents of a list of pages given a list of URLs.',
-      parameters: z.object({
-        urls: z
-          .array(z.string().url())
-          .describe('The URLs to retrieve contents for'),
+    searchForUrlsContent: tool<{ urls: string[] }, UrlResult[]>({
+      description: 'Retrieve the contents of a list of pages given a list of URLs.',
+      inputSchema: z.object({
+        urls: z.array(z.string().url()).describe('The URLs to retrieve contents for'),
       }),
       execute: async ({ urls }) => {
         const results = await exaGetContents(exa, {
           urls,
           maxCharacters: maxCharacters,
         })
-        return results
+        return results.map((r: any) => ({
+          url: String(r?.url ?? ''),
+          title: r?.title ?? null,
+          snippet: r?.text ?? null,
+          publishedDate: r?.publishedDate ?? null,
+        }))
       },
     }),
-    searchWikipedia: tool({
+    searchWikipedia: tool<{ query: string }, UrlResult[]>({
       description: 'Fetch the wikipedia page for a given website URL.',
-      parameters: z.object({
-        query: z
-          .string()
-          .describe('The search term or URL to find Wikipedia information for'),
+      inputSchema: z.object({
+        query: z.string().describe('The search term or URL to find Wikipedia information for'),
       }),
       execute: async ({ query }) => {
         const result = await exaSearchWikipedia(exa, { query })
-        return result
+        return result.map((r: any) => ({
+          url: String(r?.url ?? ''),
+          title: r?.title ?? null,
+          snippet: r?.text ?? null,
+          publishedDate: r?.publishedDate ?? null,
+        }))
       },
     }),
-    searchReddit: tool({
+    searchReddit: tool<{ query: string }, UrlResult[]>({
       description: 'Fetch the reddit page for a given website URL.',
-      parameters: z.object({
-        query: z
-          .string()
-          .describe('The search term or URL to find Reddit information for'),
+      inputSchema: z.object({
+        query: z.string().describe('The search term or URL to find Reddit information for'),
       }),
       execute: async ({ query }) => {
         const result = await exaSearchReddit(exa, { query })
-        return result
+        return result.map((r: any) => ({
+          url: String(r?.url ?? ''),
+          title: r?.title ?? null,
+          snippet: r?.text ?? null,
+          publishedDate: r?.publishedDate ?? null,
+        }))
       },
     }),
-    searchNews: tool({
+    searchNews: tool<{ query: string }, UrlResult[]>({
       description: 'Fetch the latest news for a given query.',
-      parameters: z.object({
+      inputSchema: z.object({
         query: z.string().describe('The query to search for'),
       }),
       execute: async ({ query }) => {
         const result = await exaSearchNews(exa, { query })
-        return result
+        return result.map((r: any) => ({
+          url: String(r?.url ?? ''),
+          title: r?.title ?? null,
+          snippet: r?.text ?? null,
+          publishedDate: r?.publishedDate ?? null,
+        }))
       },
     }),
   }
@@ -119,7 +143,7 @@ async function performExaSearch(
     numResults?: number
     includeDomains?: string[]
     excludeDomains?: string[]
-  }
+  },
 ) {
   const { results } = await exa.search(config.query, {
     numResults: config.numResults,
@@ -138,7 +162,7 @@ async function exaGetContents(
     includeDomains?: string[]
     excludeDomains?: string[]
     maxCharacters?: number
-  }
+  },
 ) {
   const { results } = await exa.getContents(config.urls, {
     useAutoprompt: true,

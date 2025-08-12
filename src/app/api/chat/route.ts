@@ -1,17 +1,17 @@
-import { convertToModelMessages, streamText } from 'ai'
+import { convertToModelMessages, stepCountIs, streamText } from 'ai'
 import { headers } from 'next/headers'
 import type { AIModel } from '@/lib/ai/models'
 import { auth } from '@/lib/auth'
 import { apiLogger } from '@/lib/api-logger'
 import * as response from './response'
 import { createOnFinish } from './service'
-import { tools } from '../../../lib/tools'
 import {
   getMessagesFromRequest,
   getModelInfo,
   getSelectedModelIdFromMessages,
   handleStreamError,
 } from './utils'
+import { exaTools } from '@/lib/tools'
 
 export async function POST(req: Request) {
   const logContext = apiLogger.createContext(req)
@@ -59,9 +59,21 @@ export async function POST(req: Request) {
     const result = streamText({
       model: selectedModelId,
       messages: convertToModelMessages(messages),
-      tools: tools,
+      tools: {
+        ...exaTools(
+          {
+            apiKey: process.env.EXA_API_KEY!,
+            numResults: 5,
+            maxCharacters: 1000,
+          },
+          {
+            excludeTools: [],
+          },
+        ),
+      },
       toolChoice: 'auto',
       providerOptions: modelInfo.providerOptions,
+      stopWhen: stepCountIs(20),
     })
 
     const streamResponse = result.toUIMessageStreamResponse({

@@ -10,7 +10,13 @@ import { NavUser } from '@/components/nav-user'
 import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/components/ui/command'
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandList,
+} from '@/components/ui/command'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -225,7 +231,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {historyItems.map((chat) => (
-                        <ChatHistoryItem key={chat.id} chat={chat} ChatActionsMenu={ChatActionsMenu} />
+                        <ChatHistoryItem
+                          key={chat.id}
+                          chat={chat}
+                          ChatActionsMenu={ChatActionsMenu}
+                        />
                       ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
