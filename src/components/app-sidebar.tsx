@@ -1,8 +1,7 @@
 'use client'
 
-import { ChevronRight, MessageSquare, MoreHorizontal, Pencil, Plus, Search } from 'lucide-react'
-import type { Route } from 'next'
-import Link from 'next/link'
+import { ChevronRight, Edit2, MessageSquare, MoreHorizontal, Plus, Search } from 'lucide-react'
+// Route/Link not used directly; inline edit handled in child components
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
@@ -11,14 +10,7 @@ import { NavUser } from '@/components/nav-user'
 import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/components/ui/command'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +30,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
-import { useDeleteChatMutation, useUpdateChatMutation } from '@/mutations/chat'
-import { EditableTitle } from '@/components/ui/editable-title'
-import { useQueryClient } from '@tanstack/react-query'
+import { useDeleteChatMutation } from '@/mutations/chat'
+import { ChatHistoryItem } from '@/components/chat-history-item'
+import { CommandChatItem } from '@/components/command-chat-item'
 import { useChats, useRecentChats } from '@/queries/chats'
 
 function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -79,12 +69,12 @@ function ChatActionsMenu({
   chatId,
   className,
   isInCommandItem,
-  onEdit,
+  onEditClick,
 }: {
   chatId: string
   className?: string
   isInCommandItem?: boolean
-  onEdit?: (chatId: string) => void
+  onEditClick?: () => void
 }) {
   const { mutateAsync, isPending } = useDeleteChatMutation()
   const router = useRouter()
@@ -117,11 +107,15 @@ function ChatActionsMenu({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onSelect={() => {
-            onEdit?.(chatId)
+          onSelect={(e) => {
+            e.preventDefault()
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onEditClick?.()
           }}
         >
-          <Pencil className="size-4 mr-2" />
+          <Edit2 className="size-4 mr-2" />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -148,23 +142,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const historyItems = useHistoryItems()
   const router = useRouter()
   const { context } = useAppContext()
-  const [editingId, setEditingId] = React.useState<string | null>(null)
-  const updateChat = useUpdateChatMutation()
-  const queryClient = useQueryClient()
-
-  const saveTitle = React.useCallback(
-    async (chatId: string, newTitle: string) => {
-      const trimmed = newTitle.trim()
-      if (!trimmed) {
-        setEditingId(null)
-        return
-      }
-      await updateChat.mutateAsync({ chatId, updates: { title: trimmed } })
-      setEditingId(null)
-      await queryClient.invalidateQueries({ queryKey: ['chats'] })
-    },
-    [queryClient, updateChat],
-  )
   async function handleNewChatClick() {
     try {
       router.push(`/chat`, { scroll: false })
@@ -248,41 +225,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {historyItems.map((chat) => (
-                        <SidebarMenuSubItem key={chat.id} className="group/menu-sub-item">
-                          <SidebarMenuSubButton asChild>
-                            {editingId === chat.id ? (
-                              <div className="flex items-center justify-between w-full gap-2">
-                                <EditableTitle
-                                  title={chat.title}
-                                  isEditing
-                                  onEditingChange={(editing) =>
-                                    setEditingId(editing ? chat.id : null)
-                                  }
-                                  onSave={async (newTitle: string) => {
-                                    await saveTitle(chat.id, newTitle)
-                                  }}
-                                  className="flex-1 min-w-0"
-                                  inputClassName="truncate"
-                                />
-                                <ChatActionsMenu
-                                  chatId={chat.id}
-                                  onEdit={() => setEditingId(chat.id)}
-                                />
-                              </div>
-                            ) : (
-                              <Link
-                                href={`/chat/${chat.id}` as Route}
-                                className="flex items-center justify-between w-full gap-2"
-                              >
-                                <span className="truncate">{chat.title}</span>
-                                <ChatActionsMenu
-                                  chatId={chat.id}
-                                  onEdit={() => setEditingId(chat.id)}
-                                />
-                              </Link>
-                            )}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        <ChatHistoryItem key={chat.id} chat={chat} ChatActionsMenu={ChatActionsMenu} />
                       ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
@@ -300,46 +243,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Chats">
-            {(searchResults ?? []).map((chat) => {
-              const title = chat.title ?? 'Untitled'
-              const value = `${title} | ${chat.id}`
-              const isEditing = editingId === chat.id
-              return (
-                <CommandItem
-                  className="group relative flex items-center gap-2"
-                  id={`cmd-chat-${chat.id}`}
-                  value={value}
-                  key={chat.id}
-                  onSelect={() => {
-                    if (!isEditing) {
-                      setIsSearchOpen(false)
-                      router.push(`/chat/${chat.id}`)
-                    }
-                  }}
-                >
-                  {isEditing ? (
-                    <EditableTitle
-                      title={title}
-                      isEditing
-                      onEditingChange={(editing) => setEditingId(editing ? chat.id : null)}
-                      onSave={async (newTitle: string) => {
-                        await saveTitle(chat.id, newTitle)
-                      }}
-                      className="flex-1 min-w-0"
-                      inputClassName="truncate"
-                    />
-                  ) : (
-                    <span className="truncate">{title}</span>
-                  )}
-                  <ChatActionsMenu
-                    chatId={chat.id}
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    isInCommandItem
-                    onEdit={() => setEditingId(chat.id)}
-                  />
-                </CommandItem>
-              )
-            })}
+            {(searchResults ?? []).map((chat) => (
+              <CommandChatItem
+                key={chat.id}
+                chat={{ id: chat.id, title: chat.title }}
+                onClose={() => setIsSearchOpen(false)}
+                ChatActionsMenu={ChatActionsMenu}
+              />
+            ))}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

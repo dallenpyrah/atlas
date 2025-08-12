@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth'
 import { apiLogger } from '@/lib/api-logger'
 import * as response from './response'
 import { createOnFinish } from './service'
-import { tools } from './tools'
+import { tools } from '../../../lib/tools'
 import {
   getMessagesFromRequest,
   getModelInfo,
