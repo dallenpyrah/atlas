@@ -1,7 +1,7 @@
 'use client'
 import type { Route } from 'next'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
 import { Button } from '@/components/ui/button'
@@ -9,17 +9,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useResetPasswordMutation } from '@/mutations/auth'
 
-export default function ResetPasswordPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
-  const token =
-    (typeof searchParams?.token === 'string'
-      ? searchParams.token
-      : Array.isArray(searchParams?.token)
-        ? searchParams?.token?.[0]
-        : '') || ''
+export default function ResetPasswordPage() {
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token') || ''
 
   const router = useRouter()
   const [error, setError] = React.useState<string | null>(null)

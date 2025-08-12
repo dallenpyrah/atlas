@@ -101,15 +101,16 @@ export async function getChatById(chatId: string) {
 }
 
 export async function createChat(params: {
+  id?: string
   userId: string
   spaceId?: string
   organizationId?: string
   title?: string
   metadata?: Record<string, any>
 }) {
-  const { userId, spaceId, organizationId, title, metadata } = params
+  const { id, userId, spaceId, organizationId, title, metadata } = params
   const now = new Date()
-  const chatId = crypto.randomUUID()
+  const chatId = id || crypto.randomUUID()
 
   const [newChat] = await db
     .insert(chatTable)

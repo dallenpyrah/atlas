@@ -1,6 +1,16 @@
- 'use client'
+'use client'
 
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles, Moon, Sun, Monitor } from 'lucide-react'
+import {
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
+  CreditCard,
+  LogOut,
+  Monitor,
+  Moon,
+  Sparkles,
+  Sun,
+} from 'lucide-react'
 import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -14,13 +24,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSignOutMutation } from '@/mutations/auth'
 import { useCurrentUser } from '@/queries/auth'
 

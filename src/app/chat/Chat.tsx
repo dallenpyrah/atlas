@@ -1,10 +1,10 @@
+
 'use client'
 
 import { useChat } from '@ai-sdk/react'
 import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 import { AlertTriangle, ArrowUp, Copy } from 'lucide-react'
 import { memo, useCallback, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ModelSelector } from '@/components/chat/model-selector'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
@@ -212,20 +212,21 @@ type ChatInnerProps = {
   initialModel?: string
 }
 
-function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: ChatInnerProps) {
-  const router = useRouter()
+function ChatInner({ chatId: providedChatId, initialMessages, initialModel, userId, isNewChat }: ChatInnerProps & { userId?: string; isNewChat?: boolean }) {
   const [input, setInput] = useState('')
   const [selectedModel, setSelectedModel] = useState(initialModel ?? 'openai/gpt-5')
-  const [chatId, setChatId] = useState<string | undefined>(providedChatId)
+  const [hasUpdatedUrl, setHasUpdatedUrl] = useState(Boolean(initialMessages?.length))
   const createChatMutation = useCreateChatMutation()
   const updateChatMutation = useUpdateChatMutation()
   
+  const actualChatIdRef = useRef<string | undefined>(providedChatId)
+
   const { messages, sendMessage, status, error } = useChat({
-    id: chatId,
+    id: providedChatId || 'new-chat',
     messages: initialMessages,
     onError: (error) => console.error('Chat error:', error),
   })
-  
+
   const isEmpty = messages.length === 0
   const isBusy = status !== 'ready' || createChatMutation.isPending
   const containerRef = useRef<HTMLDivElement>(null)
@@ -234,55 +235,49 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
     async (model: string) => {
       const nextModel = model && model.trim() ? model : 'gpt-5'
       setSelectedModel(nextModel)
-      if (chatId) {
+      if (actualChatIdRef.current) {
         try {
-          await updateChatMutation.mutateAsync({ chatId, updates: { metadata: { model: nextModel } } })
-        } catch (_err) {
-          // error toast handled by mutation
-        }
+          await updateChatMutation.mutateAsync({
+            chatId: actualChatIdRef.current,
+            updates: { metadata: { model: nextModel } },
+          })
+        } catch (_err) {}
       }
     },
-    [chatId, updateChatMutation],
+    [updateChatMutation],
   )
 
   const handleSubmit = useCallback(async () => {
     if (!input.trim() || isBusy) return
-    
+
     const messageText = input
     setInput('')
-    
-    if (!chatId) {
-      try {
-        const title = messageText.length > 100 ? `${messageText.substring(0, 97)}...` : messageText
-        const result = await createChatMutation.mutateAsync({
-          title,
-          metadata: { model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5' },
-        })
-        const newId = result.id
-        setChatId(newId)
-        router.replace(`/chat/${newId}`, undefined, { shallow: true })
 
-        sendMessage({
-          text: messageText,
-          metadata: {
-            model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5',
-            chatId: newId,
-          },
+    if (!hasUpdatedUrl && actualChatIdRef.current && isNewChat) {
+      try {
+        await createChatMutation.mutateAsync({
+          id: actualChatIdRef.current,
+          title: messageText.slice(0, 100),
+          metadata: { model: selectedModel },
         })
-      } catch (error) {
-        console.error('Failed to create chat:', error)
-        setInput(messageText)
+      } catch (err) {
+        console.error('Failed to create chat:', err)
+        return
       }
-    } else {
-      sendMessage({
-        text: messageText,
-        metadata: { 
-          model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5',
-          chatId,
-        },
-      })
+      
+      window.history.replaceState({}, '', `/chat/${actualChatIdRef.current}`)
+      setHasUpdatedUrl(true)
     }
-  }, [input, isBusy, chatId, selectedModel, sendMessage, createChatMutation, router])
+
+    sendMessage({
+      text: messageText,
+      metadata: {
+        model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5',
+        chatId: actualChatIdRef.current,
+        userId,
+      },
+    })
+  }, [input, isBusy, selectedModel, sendMessage, hasUpdatedUrl, userId, isNewChat, createChatMutation])
 
   return (
     <div ref={containerRef} className="flex h-[calc(92vh)] flex-col overflow-hidden">
@@ -341,12 +336,12 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel }: Ch
   )
 }
 
-type ChatProps = { chatId?: string }
+type ChatProps = { chatId?: string; userId?: string; isNewChat?: boolean }
 
-function Chat({ chatId }: ChatProps) {
-  const { data, isLoading, error } = useChatById(chatId)
+function Chat({ chatId, userId, isNewChat }: ChatProps) {
+  const { data, isLoading, error } = useChatById(isNewChat ? undefined : chatId)
 
-  if (chatId && isLoading) {
+  if (!isNewChat && chatId && isLoading) {
     return (
       <div className="flex h-[calc(92vh)] flex-col overflow-hidden">
         <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
@@ -358,7 +353,7 @@ function Chat({ chatId }: ChatProps) {
     )
   }
 
-  if (chatId && error) {
+  if (!isNewChat && chatId && error) {
     return (
       <div className="flex h-[calc(92vh)] flex-col overflow-hidden">
         <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
@@ -377,9 +372,7 @@ function Chat({ chatId }: ChatProps) {
     return model
   })()
 
-  return (
-    <ChatInner chatId={chatId} initialMessages={initialMessages} initialModel={initialModel} />
-  )
+  return <ChatInner chatId={chatId} initialMessages={initialMessages} initialModel={initialModel} userId={userId} isNewChat={isNewChat} />
 }
 
 export { Chat }

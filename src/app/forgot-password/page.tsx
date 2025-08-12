@@ -1,7 +1,7 @@
 'use client'
 import type { Route } from 'next'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
 import { Button } from '@/components/ui/button'
@@ -9,11 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRequestPasswordResetMutation } from '@/mutations/auth'
 
-export default function ForgotPasswordPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default function ForgotPasswordPage() {
+  const searchParams = useSearchParams()
   const router = useRouter()
   const [error, setError] = React.useState<string | null>(null)
   const reqReset = useRequestPasswordResetMutation({
@@ -48,7 +45,7 @@ export default function ForgotPasswordPage({
               <Input id="email" name="email" type="email" placeholder="m@example.com" required />
             </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            {searchParams?.sent === '1' ? (
+            {searchParams.get('sent') === '1' ? (
               <p className="text-sm text-green-600">
                 If an account exists for that email, a reset link has been sent.
               </p>

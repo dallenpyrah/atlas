@@ -1,7 +1,9 @@
 'use client'
 
 import type { UIMessage } from 'ai'
+
 type CreateChatParams = {
+  id?: string
   title: string
   spaceId?: string | null
   organizationId?: string | null
@@ -48,7 +50,10 @@ export const chatService = {
     return handleJsonResponse(res)
   },
 
-  async listChats(params?: { spaceId?: string | null; organizationId?: string | null }): Promise<Chat[]> {
+  async listChats(params?: {
+    spaceId?: string | null
+    organizationId?: string | null
+  }): Promise<Chat[]> {
     const search = new URLSearchParams()
     if (params?.spaceId) search.set('spaceId', params.spaceId)
     if (params?.organizationId) search.set('organizationId', params.organizationId)
@@ -79,5 +84,3 @@ export const chatService = {
 }
 
 export type { CreateChatParams, Chat, ChatWithMessages }
-
-

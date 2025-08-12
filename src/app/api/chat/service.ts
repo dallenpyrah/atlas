@@ -102,6 +102,7 @@ export async function createNewChat(data: CreateChatInput, userId: string) {
     }
 
     const newChat = await createChat({
+      id: data.id,
       userId,
       spaceId: data.spaceId,
       organizationId: data.organizationId,

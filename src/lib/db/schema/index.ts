@@ -1,6 +1,7 @@
 export * from './auth'
 export * from './chat'
 export * from './file'
+export * from './note'
 export * from './organization'
 export * from './relations'
 export * from './space'

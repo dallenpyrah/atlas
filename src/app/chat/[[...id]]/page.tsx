@@ -1,11 +1,16 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { v4 as uuidv4 } from 'uuid'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { auth } from '@/lib/auth'
-import { Chat } from './chat'
+import { Chat } from '../chat'
 
-export default async function ChatPage() {
+type ChatPageParams = Promise<{
+  id?: string[]
+}>
+
+export default async function ChatPage({ params }: { params: ChatPageParams }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -13,6 +18,10 @@ export default async function ChatPage() {
   if (!session) {
     redirect('/login')
   }
+
+  const { id } = await params
+  const isNewChat = !id?.[0]
+  const chatId = id?.[0] || uuidv4()
 
   return (
     <SidebarProvider>
@@ -23,7 +32,7 @@ export default async function ChatPage() {
             <SidebarTrigger className="-ml-1" />
           </div>
         </header>
-        <Chat chatId={undefined} />
+        <Chat chatId={chatId} userId={session.user.id} isNewChat={isNewChat} />
       </SidebarInset>
     </SidebarProvider>
   )

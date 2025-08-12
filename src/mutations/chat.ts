@@ -1,17 +1,20 @@
 'use client'
 
-import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/react-query'
+import { type UseMutationOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { chatService, type CreateChatParams, type Chat } from '@/services/chat'
+import { type Chat, type CreateChatParams, chatService } from '@/services/chat'
 
 type CreateChatResult = Chat
 
 export function useCreateChatMutation(
   options?: UseMutationOptions<CreateChatResult, Error, CreateChatParams>,
 ) {
+  const queryClient = useQueryClient()
+
   const merged: UseMutationOptions<CreateChatResult, Error, CreateChatParams> = {
     ...(options || {}),
     onSuccess: (data, vars, ctx) => {
+      void queryClient.invalidateQueries({ queryKey: ['chats'] })
       options?.onSuccess?.(data, vars, ctx)
     },
     onError: (error, vars, ctx) => {
@@ -27,7 +30,10 @@ export function useCreateChatMutation(
   })
 }
 
-type UpdateChatParams = { chatId: string; updates: { title?: string; metadata?: Record<string, unknown> | null } }
+type UpdateChatParams = {
+  chatId: string
+  updates: { title?: string; metadata?: Record<string, unknown> | null }
+}
 type UpdateChatResult = Chat
 
 export function useUpdateChatMutation(
@@ -59,8 +65,8 @@ export function useDeleteChatMutation(
   const merged: UseMutationOptions<DeleteChatResult, Error, DeleteChatParams> = {
     ...(options || {}),
     onSuccess: (data, vars, ctx) => {
-      // Invalidate lists and recent caches
       void queryClient.invalidateQueries({ queryKey: ['chats'] })
+      toast.success('Chat deleted')
       options?.onSuccess?.(data, vars, ctx)
     },
     onError: (error, vars, ctx) => {
@@ -75,5 +81,3 @@ export function useDeleteChatMutation(
     ...merged,
   })
 }
-
-

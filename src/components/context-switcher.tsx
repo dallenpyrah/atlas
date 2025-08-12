@@ -48,7 +48,7 @@ export function ContextSwitcher() {
   }
 
   return (
-    <DropdownMenu  open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
