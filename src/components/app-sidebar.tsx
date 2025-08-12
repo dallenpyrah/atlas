@@ -1,8 +1,6 @@
 'use client'
 
-import { ChevronRight, MessageSquare, MoreHorizontal, Plus, Search } from 'lucide-react'
-import type { Route } from 'next'
-import Link from 'next/link'
+import { ChevronRight, Edit2, MessageSquare, MoreHorizontal, Plus, Search } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { AtlasBadge } from '@/components/atlas-badge'
@@ -15,7 +13,6 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
-  CommandItem,
   CommandList,
 } from '@/components/ui/command'
 import {
@@ -37,9 +34,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
+import { ChatHistoryItem } from '@/components/chat-history-item'
+import { CommandChatItem } from '@/components/command-chat-item'
 import { useDeleteChatMutation } from '@/mutations/chat'
 import { useChats, useRecentChats } from '@/queries/chats'
 
@@ -73,10 +70,12 @@ function ChatActionsMenu({
   chatId,
   className,
   isInCommandItem,
+  onEditClick,
 }: {
   chatId: string
   className?: string
   isInCommandItem?: boolean
+  onEditClick?: () => void
 }) {
   const { mutateAsync, isPending } = useDeleteChatMutation()
   const router = useRouter()
@@ -108,6 +107,20 @@ function ChatActionsMenu({
           Actions
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {onEditClick && (
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault()
+            }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onEditClick()
+            }}
+          >
+            <Edit2 className="size-4" />
+            Edit
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           variant="destructive"
           onSelect={(e) => {
@@ -216,14 +229,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {historyItems.map((chat) => (
-                        <SidebarMenuSubItem key={chat.id} className="group/menu-sub-item">
-                          <SidebarMenuSubButton asChild>
-                            <Link href={`/chat/${chat.id}` as Route} className="flex items-center justify-between w-full">
-                              <span className="truncate">{chat.title}</span>
-                              <ChatActionsMenu chatId={chat.id} />
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        <ChatHistoryItem
+                          key={chat.id}
+                          chat={chat}
+                          ChatActionsMenu={ChatActionsMenu}
+                        />
                       ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
@@ -241,29 +251,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Chats">
-            {(searchResults ?? []).map((chat) => {
-              const title = chat.title ?? 'Untitled'
-              const value = `${title} | ${chat.id}`
-              return (
-                <CommandItem
-                  className="group relative flex items-center gap-2"
-                  id={`cmd-chat-${chat.id}`}
-                  value={value}
-                  key={chat.id}
-                  onSelect={() => {
-                    setIsSearchOpen(false)
-                    router.push(`/chat/${chat.id}`)
-                  }}
-                >
-                  {title}
-                  <ChatActionsMenu
-                    chatId={chat.id}
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    isInCommandItem
-                  />
-                </CommandItem>
-              )
-            })}
+            {(searchResults ?? []).map((chat) => (
+              <CommandChatItem
+                key={chat.id}
+                chat={chat}
+                onClose={() => setIsSearchOpen(false)}
+                ChatActionsMenu={ChatActionsMenu}
+              />
+            ))}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

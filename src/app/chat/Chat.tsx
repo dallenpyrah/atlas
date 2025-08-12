@@ -235,7 +235,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel, user
     async (model: string) => {
       const nextModel = model && model.trim() ? model : 'gpt-5'
       setSelectedModel(nextModel)
-      if (actualChatIdRef.current) {
+      if (actualChatIdRef.current && !isNewChat) {
         try {
           await updateChatMutation.mutateAsync({
             chatId: actualChatIdRef.current,
@@ -244,7 +244,7 @@ function ChatInner({ chatId: providedChatId, initialMessages, initialModel, user
         } catch (_err) {}
       }
     },
-    [updateChatMutation],
+    [updateChatMutation, isNewChat],
   )
 
   const handleSubmit = useCallback(async () => {
