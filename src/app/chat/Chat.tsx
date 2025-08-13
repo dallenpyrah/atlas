@@ -78,7 +78,7 @@ function renderMessagePart(part: UIMessagePart<UIDataTypes, UITools>, index: num
       return textPart.text ? (
         <MessageContent
           key={index}
-          className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0"
+          className="text-foreground prose dark:prose-invert prose-headings:text-foreground dark:prose-headings:text-foreground w-full min-w-0 flex-1 bg-transparent p-0"
           markdown
         >
           {textPart.text}
