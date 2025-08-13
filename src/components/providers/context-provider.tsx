@@ -16,7 +16,7 @@ type AppContextValue = {
   setContext: (context: SelectedContext) => void
 }
 
-const STORAGE_KEY = 'atlas.selectedContext'
+const STORAGE_KEY = 'oyster.selectedContext'
 
 const AppContext = React.createContext<AppContextValue | undefined>(undefined)
 

@@ -4,7 +4,7 @@ import { ChevronRight, Edit2, MessageSquare, MoreHorizontal, Plus, Search } from
 // Route/Link not used directly; inline edit handled in child components
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
-import { AtlasBadge } from '@/components/atlas-badge'
+import { OysterBadge } from '@/components/oyster-badge'
 import { ContextSwitcher } from '@/components/context-switcher'
 import { NavUser } from '@/components/nav-user'
 import { useAppContext } from '@/components/providers/context-provider'
@@ -171,7 +171,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <AtlasBadge />
+                <OysterBadge />
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

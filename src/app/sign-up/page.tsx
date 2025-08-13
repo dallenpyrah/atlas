@@ -34,7 +34,7 @@ export default function SignUpPage() {
         <div className="flex justify-center gap-2 md:justify-start">
           <Link href="/" className="flex items-center gap-2 font-medium">
             <div className="bg-primary text-primary-foreground flex items-center justify-center rounded-md px-2 py-1">
-              <span className="text-xs font-medium tracking-widest">ATLAS</span>
+              <span className="text-xs font-medium tracking-widest">OYSTER</span>
             </div>
           </Link>
         </div>

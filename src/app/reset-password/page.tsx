@@ -3,7 +3,7 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
-import { AtlasBadge } from '@/components/atlas-badge'
+import { OysterBadge } from '@/components/oyster-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-svh flex flex-col">
       <div className="flex justify-center gap-2 p-6 md:p-10 md:justify-start">
-        <AtlasBadge />
+        <OysterBadge />
       </div>
       <div className="flex flex-1 items-center justify-center p-6">
         <form className="flex w-full max-w-sm flex-col gap-6" onSubmit={handleSubmit}>
