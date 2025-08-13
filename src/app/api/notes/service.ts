@@ -12,8 +12,6 @@ import type { CreateNoteInput, SearchNotesInput, UpdateNoteInput } from './schem
 import * as validator from './validator'
 import { verifySpaceAccess } from './utils'
 
-// Access checks moved to utils.ts
-
 export async function listPersonalNotes(userId: string) {
   return await getPersonalNotes(userId)
 }
