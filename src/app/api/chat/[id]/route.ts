@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import type { NextRequest } from 'next/server'
-import { auth } from '@/lib/auth'
 import { apiLogger } from '@/lib/api-logger'
+import { auth } from '@/lib/auth'
 import * as response from '../response'
 import * as schema from '../schema'
 import * as service from '../service'

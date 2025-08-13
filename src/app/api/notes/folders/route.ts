@@ -1,9 +1,19 @@
 import { headers } from 'next/headers'
 import type { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { auth } from '@/lib/auth'
-import * as response from './response'
-import * as schema from './schema'
-import * as service from './service'
+import * as response from '../response'
+import * as schema from '../schema'
+import { createFolderInNote, getNotesWithFolderStructure } from '../service'
+
+const createFolderSchema = schema.createNoteSchema
+  .pick({
+    spaceId: true,
+    organizationId: true,
+  })
+  .extend({
+    folderPath: z.array(z.string().min(1).max(100)),
+  })
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +28,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const spaceId = searchParams.get('spaceId')
     const organizationId = searchParams.get('organizationId')
-    const folderPath = searchParams.get('folderPath')
 
     if (spaceId && organizationId) {
       return response.createErrorResponse(
@@ -52,31 +61,21 @@ export async function GET(request: NextRequest) {
       validatedOrgId = validation.data
     }
 
-    let result
-    if (folderPath) {
-      try {
-        const parsedFolderPath = JSON.parse(folderPath) as string[]
-        result = await service.getNotesInFolder(
-          parsedFolderPath,
-          validatedSpaceId,
-          validatedOrgId,
-          session.user.id,
-        )
-      } catch (error) {
-        return response.createErrorResponse('Invalid folder path format', 400)
-      }
-    } else {
-      result = await service.listNotes(validatedSpaceId, validatedOrgId, session.user.id)
-    }
+    const result = await getNotesWithFolderStructure(
+      validatedSpaceId,
+      validatedOrgId,
+      session.user.id,
+    )
 
     if (!result.success) {
-      return response.createErrorResponse(result.error || 'Failed to retrieve notes', 400)
+      const message = 'error' in result ? (result as any).error : 'Failed to fetch folders'
+      return response.createErrorResponse(message, 400)
     }
 
     return response.createSuccessResponse(result.data)
   } catch (error) {
-    console.error('Failed to retrieve notes', error)
-    return response.createErrorResponse('Failed to retrieve notes', 500)
+    console.error('Failed to fetch folders', error)
+    return response.createErrorResponse('Failed to fetch folders', 500)
   }
 }
 
@@ -91,27 +90,32 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const validation = schema.createNoteSchema.safeParse(body)
+    const validation = createFolderSchema.safeParse(body)
 
     if (!validation.success) {
       return response.createValidationErrorResponse(
-        validation.error.issues[0]?.message || 'Invalid request body',
+        validation.error.issues[0]?.message || 'Invalid folder data',
         validation.error.issues,
       )
     }
 
-    const result = await service.createNewNote(validation.data, session.user.id)
+    const result = await createFolderInNote(
+      validation.data.folderPath,
+      validation.data.spaceId ?? null,
+      validation.data.organizationId ?? null,
+      session.user.id,
+    )
 
     if (!result.success) {
-      return response.createErrorResponse(result.error || 'Failed to create note', 400)
+      return response.createErrorResponse(result.error || 'Failed to create folder', 400)
     }
 
     return response.createSuccessResponse(result.data, 201)
   } catch (error) {
-    console.error('Failed to create note', error)
+    console.error('Failed to create folder', error)
     if (error instanceof SyntaxError) {
       return response.createErrorResponse('Invalid JSON in request body', 400)
     }
-    return response.createErrorResponse('Failed to create note')
+    return response.createErrorResponse('Failed to create folder')
   }
 }

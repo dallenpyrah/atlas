@@ -130,7 +130,7 @@ function ReasoningContent({
         updateHeight()
       }
     })
-    
+
     observer.observe(innerRef.current)
     updateHeight()
 

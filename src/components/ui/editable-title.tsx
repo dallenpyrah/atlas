@@ -10,6 +10,8 @@ interface EditableTitleProps {
   onEditingChange: (editing: boolean) => void
   className?: string
   inputClassName?: string
+  placeholder?: string
+  autoFocusWhenEmpty?: boolean
 }
 
 export function EditableTitle({
@@ -19,6 +21,8 @@ export function EditableTitle({
   onEditingChange,
   className,
   inputClassName,
+  placeholder,
+  autoFocusWhenEmpty,
 }: EditableTitleProps) {
   const [value, setValue] = useState(title)
   const [isSaving, setIsSaving] = useState(false)
@@ -29,7 +33,7 @@ export function EditableTitle({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus()
-      inputRef.current.select()
+      if (value) inputRef.current.select()
     }
   }, [isEditing])
 
@@ -90,7 +94,7 @@ export function EditableTitle({
           onEditingChange(true)
         }}
       >
-        {title}
+        {title || placeholder || ''}
       </span>
     )
   }
@@ -117,6 +121,8 @@ export function EditableTitle({
           'placeholder:text-muted-foreground',
           inputClassName,
         )}
+        placeholder={placeholder}
+        autoFocus={autoFocusWhenEmpty && !title}
       />
     </div>
   )

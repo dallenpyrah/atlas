@@ -4,6 +4,7 @@ import {
   deleteChat,
   getAllChats,
   getChatById,
+  getOrganizationRootChats,
   getPersonalChats,
   saveChatExchange,
   updateChat,
@@ -16,7 +17,6 @@ import {
   verifySpaceAccess,
 } from './utils'
 import * as validator from './validator'
-import { getOrganizationRootChats } from './client'
 
 // Access check helpers moved to utils.ts
 

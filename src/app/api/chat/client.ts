@@ -2,8 +2,8 @@ import type { UIMessage } from 'ai'
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { chat as chatTable, message as messageTable } from '@/lib/db/schema/chat'
-import { space as spaceTable, spaceMember } from '@/lib/db/schema/space'
 import { member as orgMember } from '@/lib/db/schema/organization'
+import { spaceMember, space as spaceTable } from '@/lib/db/schema/space'
 
 export async function saveChatExchange(params: {
   user: UIMessage

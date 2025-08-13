@@ -1,10 +1,10 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { codeToHtml } from 'shiki'
 import { cn } from '@/lib/utils'
-import { useTheme } from 'next-themes'
 
 export type CodeBlockProps = {
   children?: React.ReactNode
@@ -33,13 +33,7 @@ export type CodeBlockCodeProps = {
   className?: string
 } & React.HTMLProps<HTMLDivElement>
 
-function CodeBlockCode({
-  code,
-  language = 'tsx',
-  theme,
-  className,
-  ...props
-}: CodeBlockCodeProps) {
+function CodeBlockCode({ code, language = 'tsx', theme, className, ...props }: CodeBlockCodeProps) {
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
   const { resolvedTheme } = useTheme()
   const effectiveTheme = theme ?? (resolvedTheme === 'dark' ? 'github-dark' : 'github-light')

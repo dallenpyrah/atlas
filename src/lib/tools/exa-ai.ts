@@ -1,6 +1,6 @@
-import { tool, type Tool } from 'ai'
-import { z } from 'zod'
+import { type Tool, tool } from 'ai'
 import Exa from 'exa-js'
+import { z } from 'zod'
 
 export type ExaTools =
   | 'searchUrls'

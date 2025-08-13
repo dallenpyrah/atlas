@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query')
     const spaceId = searchParams.get('spaceId')
     const organizationId = searchParams.get('organizationId')
+    const folderPath = searchParams.get('folderPath')
     const limit = searchParams.get('limit')
 
     if (!query) {
@@ -32,10 +33,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    let parsedFolderPath: string[] | undefined
+    if (folderPath) {
+      try {
+        parsedFolderPath = JSON.parse(folderPath) as string[]
+      } catch (error) {
+        return response.createErrorResponse('Invalid folder path format', 400)
+      }
+    }
+
     const searchInput = {
       query,
       spaceId: spaceId || undefined,
       organizationId: organizationId || undefined,
+      folderPath: parsedFolderPath,
       limit: limit ? parseInt(limit, 10) : undefined,
     }
 

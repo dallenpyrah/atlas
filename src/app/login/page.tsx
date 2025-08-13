@@ -1,6 +1,6 @@
 import Image from 'next/image'
-import { OysterBadge } from '@/components/oyster-badge'
 import { LoginForm } from '@/components/login-form'
+import { OysterBadge } from '@/components/oyster-badge'
 
 export default function LoginPage() {
   return (

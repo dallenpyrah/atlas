@@ -1,8 +1,9 @@
 import { convertToModelMessages, stepCountIs, streamText } from 'ai'
 import { headers } from 'next/headers'
 import type { AIModel } from '@/lib/ai/models'
-import { auth } from '@/lib/auth'
 import { apiLogger } from '@/lib/api-logger'
+import { auth } from '@/lib/auth'
+import { exaTools } from '@/lib/tools'
 import * as response from './response'
 import { createOnFinish } from './service'
 import {
@@ -11,7 +12,6 @@ import {
   getSelectedModelIdFromMessages,
   handleStreamError,
 } from './utils'
-import { exaTools } from '@/lib/tools'
 
 export async function POST(req: Request) {
   const logContext = apiLogger.createContext(req)

@@ -1,8 +1,8 @@
 import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { note as noteTable } from '@/lib/db/schema/note'
-import { space as spaceTable, spaceMember } from '@/lib/db/schema/space'
 import { member as orgMember } from '@/lib/db/schema/organization'
+import { spaceMember, space as spaceTable } from '@/lib/db/schema/space'
 
 export async function getPersonalNotes(userId: string) {
   const notes = await db

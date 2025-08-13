@@ -5,6 +5,7 @@ import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 import { AlertTriangle, ArrowUp, Copy } from 'lucide-react'
 import { memo, useCallback, useRef, useState } from 'react'
 import { ModelSelector } from '@/components/chat/model-selector'
+import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
 import { Loader } from '@/components/ui/loader'
@@ -15,7 +16,6 @@ import { ScrollButton } from '@/components/ui/scroll-button'
 import { Tool, type ToolPart } from '@/components/ui/tool'
 import { cn } from '@/lib/utils'
 import { useCreateChatMutation, useUpdateChatMutation } from '@/mutations/chat'
-import { useAppContext } from '@/components/providers/context-provider'
 import { useChatById } from '@/queries/chats'
 
 type MessageComponentProps = {
@@ -71,9 +71,14 @@ function convertToToolPart(part: any): ToolPart | null {
   return null
 }
 
-function renderMessagePart(part: UIMessagePart<UIDataTypes, UITools>, index: number, isLastMessage: boolean, isStreaming: boolean): React.ReactNode {
+function renderMessagePart(
+  part: UIMessagePart<UIDataTypes, UITools>,
+  index: number,
+  isLastMessage: boolean,
+  isStreaming: boolean,
+): React.ReactNode {
   switch (part.type) {
-    case 'text':
+    case 'text': {
       const textPart = part as UIMessagePart<UIDataTypes, UITools> & { text: string }
       return textPart.text ? (
         <MessageContent
@@ -84,15 +89,13 @@ function renderMessagePart(part: UIMessagePart<UIDataTypes, UITools>, index: num
           {textPart.text}
         </MessageContent>
       ) : null
+    }
 
-    case 'reasoning':
+    case 'reasoning': {
       const reasoningPart = part as UIMessagePart<UIDataTypes, UITools> & { text: string }
       return reasoningPart.text ? (
         <Reasoning key={index} isStreaming={isLastMessage && isStreaming}>
-          <ReasoningTrigger
-            className="mb-1"
-            textClassName="text-muted-foreground hover:underline"
-          >
+          <ReasoningTrigger className="mb-1" textClassName="text-muted-foreground hover:underline">
             Reasoning
           </ReasoningTrigger>
           <ReasoningContent
@@ -104,11 +107,16 @@ function renderMessagePart(part: UIMessagePart<UIDataTypes, UITools>, index: num
           </ReasoningContent>
         </Reasoning>
       ) : null
+    }
 
     case 'tool-call':
     case 'tool-result':
     default:
-      if (part.type === 'tool-call' || part.type === 'tool-result' || part.type?.startsWith('tool-')) {
+      if (
+        part.type === 'tool-call' ||
+        part.type === 'tool-result' ||
+        part.type?.startsWith('tool-')
+      ) {
         const toolPart = convertToToolPart(part)
         if (toolPart) {
           return (
@@ -137,8 +145,8 @@ export const MessageComponent = memo(
       >
         {isAssistant ? (
           <div className="group flex w-full flex-col gap-0 space-y-2">
-            {message.parts?.map((part, index) => 
-              renderMessagePart(part, index, isLastMessage, isStreaming)
+            {message.parts?.map((part, index) =>
+              renderMessagePart(part, index, isLastMessage, isStreaming),
             )}
 
             <MessageActions

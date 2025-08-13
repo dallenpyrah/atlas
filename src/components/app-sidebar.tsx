@@ -1,12 +1,13 @@
 'use client'
 
 import { ChevronRight, Edit2, MessageSquare, MoreHorizontal, Plus, Search } from 'lucide-react'
-// Route/Link not used directly; inline edit handled in child components
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
-import { OysterBadge } from '@/components/oyster-badge'
+import { ChatHistoryItem } from '@/components/chat-history-item'
+import { CommandChatItem } from '@/components/command-chat-item'
 import { ContextSwitcher } from '@/components/context-switcher'
 import { NavUser } from '@/components/nav-user'
+import { OysterBadge } from '@/components/oyster-badge'
 import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -38,8 +39,7 @@ import {
   SidebarMenuSub,
 } from '@/components/ui/sidebar'
 import { useDeleteChatMutation } from '@/mutations/chat'
-import { ChatHistoryItem } from '@/components/chat-history-item'
-import { CommandChatItem } from '@/components/command-chat-item'
+// notes UI removed
 import { useChats, useRecentChats } from '@/queries/chats'
 
 function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -148,22 +148,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const historyItems = useHistoryItems()
   const router = useRouter()
   const { context } = useAppContext()
-  async function handleNewChatClick() {
-    try {
-      router.push(`/chat`, { scroll: false })
-    } catch (e) {}
-  }
 
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
+  // notes UI removed
+
   const selectedSpaceId: string | null = context?.type === 'space' ? context.id : null
   const selectedOrgId: string | null = context?.type === 'organization' ? context.id : null
+
   const { data: searchResults } = useChats({
     spaceId: selectedSpaceId,
     organizationId: selectedOrgId,
     search,
     limit: 20,
   })
+
+  async function handleNewChatClick() {
+    try {
+      router.push(`/chat`, { scroll: false })
+    } catch (e) {}
+  }
+
+  // removed note handlers
   return (
     <>
       <Sidebar variant="inset" {...props}>
@@ -264,6 +270,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </CommandGroup>
         </CommandList>
       </CommandDialog>
+
+      {/* Notes UI removed */}
     </>
   )
 }

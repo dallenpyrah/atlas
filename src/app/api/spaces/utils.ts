@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { member as orgMember } from '@/lib/db/schema/organization'
-import { space as spaceTable, spaceMember } from '@/lib/db/schema/space'
+import { spaceMember, space as spaceTable } from '@/lib/db/schema/space'
 
 export async function verifyUserCanModifySpace(userId: string, spaceId: string) {
   const [space] = await db.select().from(spaceTable).where(eq(spaceTable.id, spaceId)).limit(1)

@@ -2,9 +2,9 @@ import { and, desc, eq, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { member } from '@/lib/db/schema/organization'
 import { spaceMember, space as spaceTable } from '@/lib/db/schema/space'
-import * as validator from './validator'
-import { verifyUserCanModifySpace } from './utils'
 import type { CreateSpaceInput, UpdateSpaceInput } from './schema'
+import { verifyUserCanModifySpace } from './utils'
+import * as validator from './validator'
 
 function generateSlugFromName(name: string): string {
   return name

@@ -1,9 +1,9 @@
 'use client'
 
 import { Building2, Check, ChevronsUpDown, FolderOpen, Loader2, Plus, User } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from '@/clients/auth'
 import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'

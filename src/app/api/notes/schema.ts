@@ -30,6 +30,7 @@ export const searchNotesSchema = z.object({
   query: z.string().min(1, 'Search query is required').max(200, 'Search query is too long'),
   spaceId: z.string().uuid('Invalid space ID format').optional(),
   organizationId: z.string().uuid('Invalid organization ID format').optional(),
+  folderPath: z.array(z.string()).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
 
