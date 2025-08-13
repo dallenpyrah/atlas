@@ -110,17 +110,29 @@ function ReasoningContent({
   useEffect(() => {
     if (!contentRef.current || !innerRef.current) return
 
+    const updateHeight = () => {
+      if (contentRef.current && innerRef.current) {
+        if (isOpen) {
+          setTimeout(() => {
+            if (contentRef.current && innerRef.current) {
+              const height = innerRef.current.scrollHeight
+              contentRef.current.style.maxHeight = `${height + 15}px`
+            }
+          }, 0)
+        } else {
+          contentRef.current.style.maxHeight = '0px'
+        }
+      }
+    }
+
     const observer = new ResizeObserver(() => {
-      if (contentRef.current && innerRef.current && isOpen) {
-        contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`
+      if (isOpen) {
+        updateHeight()
       }
     })
-
+    
     observer.observe(innerRef.current)
-
-    if (isOpen) {
-      contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`
-    }
+    updateHeight()
 
     return () => observer.disconnect()
   }, [isOpen])
@@ -131,9 +143,6 @@ function ReasoningContent({
     <div
       ref={contentRef}
       className={cn('overflow-hidden transition-[max-height] duration-150 ease-out', className)}
-      style={{
-        maxHeight: isOpen ? contentRef.current?.scrollHeight : '0px',
-      }}
       {...props}
     >
       <div

@@ -5,7 +5,6 @@ import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 import { AlertTriangle, ArrowUp, Copy } from 'lucide-react'
 import { memo, useCallback, useRef, useState } from 'react'
 import { ModelSelector } from '@/components/chat/model-selector'
-import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
 import { ChatContainerContent, ChatContainerRoot } from '@/components/ui/chat-container'
 import { Loader } from '@/components/ui/loader'
@@ -16,6 +15,7 @@ import { ScrollButton } from '@/components/ui/scroll-button'
 import { Tool, type ToolPart } from '@/components/ui/tool'
 import { cn } from '@/lib/utils'
 import { useCreateChatMutation, useUpdateChatMutation } from '@/mutations/chat'
+import { useAppContext } from '@/components/providers/context-provider'
 import { useChatById } from '@/queries/chats'
 
 type MessageComponentProps = {
@@ -190,7 +190,7 @@ MessageComponent.displayName = 'MessageComponent'
 const LoadingMessage = memo(() => (
   <Message className="mx-auto flex w-full max-w-3xl flex-col items-start gap-2 px-2 md:px-10">
     <div className="group flex w-full flex-col gap-0">
-      <div className="text-foreground prose w-full min-w-0 flex-1 bg-transparent p-0">
+      <div className="text-foreground prose dark:prose-invert w-full min-w-0 flex-1 bg-transparent p-0">
         <Loader variant="typing" />
       </div>
     </div>
@@ -325,14 +325,9 @@ function ChatInner({
         await createChatMutation.mutateAsync({
           id: actualChatIdRef.current,
           title: messageText.slice(0, 100),
-          metadata: { model: selectedModel },
           spaceId: context?.type === 'space' ? context.id : null,
-          organizationId:
-            context?.type === 'organization'
-              ? context.id
-              : context?.type === 'space' && context.organizationId
-                ? context.organizationId
-                : null,
+          organizationId: context?.type === 'organization' ? context.id : null,
+          metadata: { model: selectedModel },
         })
       } catch (err) {
         console.error('Failed to create chat:', err)
@@ -349,6 +344,8 @@ function ChatInner({
         model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5',
         chatId: actualChatIdRef.current,
         userId,
+        spaceId: context?.type === 'space' ? context.id : null,
+        organizationId: context?.type === 'organization' ? context.id : null,
       },
     })
   }, [
