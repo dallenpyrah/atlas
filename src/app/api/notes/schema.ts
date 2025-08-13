@@ -9,8 +9,8 @@ export const noteIdSchema = z.string().uuid('Invalid note ID format')
 export const createNoteSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title must be less than 255 characters'),
   content: z.string().optional(),
-  spaceId: z.string().uuid('Invalid space ID format').optional(),
-  organizationId: z.string().uuid('Invalid organization ID format').optional(),
+  spaceId: z.string().uuid('Invalid space ID format').nullable().optional(),
+  organizationId: z.string().uuid('Invalid organization ID format').nullable().optional(),
   isPinned: z.boolean().optional(),
   metadata: z.record(z.string(), z.any()).optional(),
 })
@@ -28,8 +28,8 @@ export const updateNoteSchema = z.object({
 
 export const searchNotesSchema = z.object({
   query: z.string().min(1, 'Search query is required').max(200, 'Search query is too long'),
-  spaceId: z.string().uuid('Invalid space ID format').optional(),
-  organizationId: z.string().uuid('Invalid organization ID format').optional(),
+  spaceId: z.string().uuid('Invalid space ID format').nullable().optional(),
+  organizationId: z.string().uuid('Invalid organization ID format').nullable().optional(),
   folderPath: z.array(z.string()).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 })

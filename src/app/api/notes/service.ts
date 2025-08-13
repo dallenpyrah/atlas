@@ -205,8 +205,8 @@ export async function createNewNote(data: CreateNoteInput, userId: string) {
       userId,
       title: data.title,
       content: data.content,
-      spaceId: data.spaceId,
-      organizationId: data.organizationId,
+      spaceId: data.spaceId ?? undefined,
+      organizationId: data.organizationId ?? undefined,
       isPinned: data.isPinned,
       metadata: data.metadata,
     })
@@ -286,8 +286,8 @@ export async function searchUserNotes(params: SearchNotesInput, userId: string) 
     let notes = await searchNotes({
       userId,
       query: params.query,
-      spaceId: params.spaceId,
-      organizationId: params.organizationId,
+      spaceId: params.spaceId ?? undefined,
+      organizationId: params.organizationId ?? undefined,
       limit: params.limit,
     })
 

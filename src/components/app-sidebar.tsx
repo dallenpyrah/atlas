@@ -1,12 +1,22 @@
 'use client'
 
-import { ChevronRight, Edit2, MessageSquare, MoreHorizontal, Plus, Search } from 'lucide-react'
+import {
+  ChevronRight,
+  Edit2,
+  FileText,
+  MessageSquare,
+  MoreHorizontal,
+  Plus,
+  Search,
+} from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { ChatHistoryItem } from '@/components/chat-history-item'
 import { CommandChatItem } from '@/components/command-chat-item'
+import { CommandNoteItem } from '@/components/command-note-item'
 import { ContextSwitcher } from '@/components/context-switcher'
 import { NavUser } from '@/components/nav-user'
+import { NoteHistoryItem } from '@/components/note-history-item'
 import { OysterBadge } from '@/components/oyster-badge'
 import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
@@ -39,8 +49,9 @@ import {
   SidebarMenuSub,
 } from '@/components/ui/sidebar'
 import { useDeleteChatMutation } from '@/mutations/chat'
-// notes UI removed
+import { useCreateNoteMutation, useDeleteNoteMutation } from '@/mutations/note'
 import { useChats, useRecentChats } from '@/queries/chats'
+import { useNotes, useRecentNotes } from '@/queries/notes'
 
 function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -69,6 +80,14 @@ function useHistoryItems() {
   const organizationId = context?.type === 'organization' ? context.id : null
   const { data: chats } = useRecentChats(5, { spaceId, organizationId })
   return (chats ?? []).map((c) => ({ id: c.id, title: c.title ?? 'Untitled' }))
+}
+
+function useNotesHistoryItems() {
+  const { context } = useAppContext()
+  const spaceId = context?.type === 'space' ? context.id : null
+  const organizationId = context?.type === 'organization' ? context.id : null
+  const { data: notes } = useRecentNotes(5, { spaceId, organizationId })
+  return (notes ?? []).map((n) => ({ id: n.id, title: n.title ?? 'Untitled' }))
 }
 
 function ChatActionsMenu({
@@ -144,19 +163,107 @@ function ChatActionsMenu({
   )
 }
 
+function NoteActionsMenu({
+  noteId,
+  className,
+  isInCommandItem,
+  onEditClick,
+  availableNotes,
+}: {
+  noteId: string
+  className?: string
+  isInCommandItem?: boolean
+  onEditClick?: () => void
+  availableNotes?: { id: string; title: string }[]
+}) {
+  const { mutateAsync, isPending } = useDeleteNoteMutation()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Open note actions"
+          title="More actions"
+          className={`group size-7 p-0 text-muted-foreground hover:text-foreground rounded-sm ${className ?? ''}`}
+          onMouseDown={(e) => {
+            if (isInCommandItem) {
+              e.preventDefault()
+            }
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+        >
+          <MoreHorizontal className="size-4 transition-colors group-hover:text-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side={isInCommandItem ? 'right' : 'right'} className="w-40">
+        <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          Actions
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault()
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onEditClick?.()
+          }}
+        >
+          <Edit2 className="size-4 mr-2" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={async () => {
+            try {
+              await mutateAsync({ noteId })
+              if (pathname === `/notes/${noteId}`) {
+                const remainingNotes = availableNotes?.filter((note) => note.id !== noteId) || []
+                if (remainingNotes.length > 0) {
+                  router.replace(`/notes/${remainingNotes[0].id}`, { scroll: false })
+                } else {
+                  router.replace('/notes', { scroll: false })
+                }
+              }
+            } catch (_) {}
+          }}
+          disabled={isPending}
+        >
+          <TrashIcon className="size-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const historyItems = useHistoryItems()
+  const notesHistoryItems = useNotesHistoryItems()
   const router = useRouter()
   const { context } = useAppContext()
+  const { mutateAsync: createNote } = useCreateNoteMutation()
 
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
-  // notes UI removed
 
   const selectedSpaceId: string | null = context?.type === 'space' ? context.id : null
   const selectedOrgId: string | null = context?.type === 'organization' ? context.id : null
 
   const { data: searchResults } = useChats({
+    spaceId: selectedSpaceId,
+    organizationId: selectedOrgId,
+    search,
+    limit: 20,
+  })
+
+  const { data: noteSearchResults } = useNotes({
     spaceId: selectedSpaceId,
     organizationId: selectedOrgId,
     search,
@@ -169,7 +276,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     } catch (e) {}
   }
 
-  // removed note handlers
+  async function handleNewNoteClick() {
+    try {
+      const newNote = await createNote({
+        title: 'Untitled',
+        spaceId: selectedSpaceId,
+        organizationId: selectedOrgId,
+      })
+      router.push(`/notes/${newNote.id}`, { scroll: false })
+    } catch (e) {}
+  }
+
   return (
     <>
       <Sidebar variant="inset" {...props}>
@@ -247,6 +364,49 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              <Collapsible defaultOpen={true} asChild>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Notes">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" type="button" className="justify-start">
+                        <FileText className="size-4" />
+                        <span>Notes</span>
+                      </Button>
+                    </CollapsibleTrigger>
+                  </SidebarMenuButton>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuAction className="data-[state=open]:rotate-90">
+                      <ChevronRight />
+                      <span className="sr-only">Toggle</span>
+                    </SidebarMenuAction>
+                  </CollapsibleTrigger>
+                  <SidebarMenuAction asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 p-0"
+                      onClick={handleNewNoteClick}
+                      title="Create new note"
+                    >
+                      <Plus className="size-4" />
+                      <span className="sr-only">Create new note</span>
+                    </Button>
+                  </SidebarMenuAction>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {notesHistoryItems.map((note) => (
+                        <NoteHistoryItem
+                          key={note.id}
+                          note={note}
+                          NoteActionsMenu={(props) => (
+                            <NoteActionsMenu {...props} availableNotes={notesHistoryItems} />
+                          )}
+                        />
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
@@ -255,7 +415,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarFooter>
       </Sidebar>
       <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-        <CommandInput placeholder="Search chats..." value={search} onValueChange={setSearch} />
+        <CommandInput
+          placeholder="Search chats and notes..."
+          value={search}
+          onValueChange={setSearch}
+        />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Chats">
@@ -268,10 +432,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               />
             ))}
           </CommandGroup>
+          <CommandGroup heading="Notes">
+            {(noteSearchResults ?? []).map((note) => (
+              <CommandNoteItem
+                key={note.id}
+                note={{ id: note.id, title: note.title }}
+                onClose={() => setIsSearchOpen(false)}
+                NoteActionsMenu={(props) => (
+                  <NoteActionsMenu
+                    {...props}
+                    availableNotes={noteSearchResults?.map((n) => ({ id: n.id, title: n.title }))}
+                  />
+                )}
+              />
+            ))}
+          </CommandGroup>
         </CommandList>
       </CommandDialog>
-
-      {/* Notes UI removed */}
     </>
   )
 }
