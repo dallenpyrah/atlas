@@ -1,13 +1,17 @@
 'use client'
 
+import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus } from 'lucide-react'
 import { useAppContext } from '@/components/providers/context-provider'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { cn } from '@/lib/utils'
 import { useCreateNoteMutation, useUpdateNoteMutation } from '@/mutations/note'
 import { useNoteById, useRecentNotes } from '@/queries/notes'
 import { NotesClient } from './notes-client'
@@ -41,7 +45,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
 
   useEffect(() => {
     if (note && titleRef.current && !isEditingTitle) {
-      // keep local title in sync when switching notes or after updates
       titleRef.current.textContent = note.title ?? 'Untitled'
       setTitleValue(note.title ?? 'Untitled')
     }
@@ -64,26 +67,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
     }
   }, [titleValue, note, noteId, updateNote])
 
-  const handleTitleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        handleTitleSubmit()
-      } else if (e.key === 'Escape') {
-        setTitleValue(note?.title || 'Untitled')
-        setIsEditingTitle(false)
-      }
-    },
-    [handleTitleSubmit, note],
-  )
-
-  const handleTitleClick = useCallback(() => {
-    if (noteId && note) {
-      setTitleValue(note.title)
-      setIsEditingTitle(true)
-    }
-  }, [noteId, note])
-
   const handleCreateNote = useCallback(async () => {
     try {
       const newNote = await createNote({
@@ -101,8 +84,15 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
     return (
       <>
         <header className="flex h-16 shrink-0 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Notes</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </header>
         <div className="flex items-center justify-center h-full">
@@ -111,12 +101,7 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
               <p className="text-lg mb-2">You don't have any notes yet</p>
               <p className="text-sm">Create your first note to get started</p>
             </div>
-            <Button
-              onClick={handleCreateNote}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
+            <Button onClick={handleCreateNote} variant="outline" size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
               New note
             </Button>
@@ -130,9 +115,15 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
     return (
       <>
         <header className="flex h-16 shrink-0 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
-            <h1 className="text-lg font-semibold text-muted-foreground">Loading...</h1>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Notes</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </header>
         <div className="flex items-center justify-center h-full">
@@ -145,11 +136,20 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between px-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Notes</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        <div className="flex items-center">
           <h1
             ref={titleRef}
-            className="flex-1 text-lg font-semibold text-foreground cursor-text hover:bg-muted/50 px-2 py-1 rounded -ml-2 outline-none"
+            className="text-lg font-semibold text-foreground cursor-text hover:bg-muted/50 px-2 py-1 rounded outline-none"
             contentEditable={isEditingTitle}
             suppressContentEditableWarning
             onBlur={async (e) => {
@@ -163,7 +163,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
                   })
                 } catch (error) {
                   console.error('Failed to update title:', error)
-                  // Revert on error
                   if (titleRef.current && note) {
                     titleRef.current.textContent = note.title || 'Untitled'
                   }
@@ -196,7 +195,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
             {displayTitle}
           </h1>
         </div>
-        <div className="flex items-center" />
       </header>
       <NotesClient noteId={noteId} />
     </>

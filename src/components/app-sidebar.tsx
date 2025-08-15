@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Edit2,
   FileText,
+  Folder,
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -430,6 +431,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Files">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    className="justify-start"
+                    onClick={() => router.push('/files', { scroll: false })}
+                  >
+                    <Folder className="size-4" />
+                    <span>Files</span>
+                  </Button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>

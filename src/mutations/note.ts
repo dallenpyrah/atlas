@@ -1,10 +1,10 @@
 'use client'
 
 import {
+  type QueryKey,
   type UseMutationOptions,
   useMutation,
   useQueryClient,
-  type QueryKey,
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { type CreateNoteParams, type Note, noteService } from '@/services/note'
@@ -119,15 +119,15 @@ export function useUpdateNoteMutation(
           updatedAt: new Date().toISOString(),
         }
         queryClient.setQueryData(['notes', 'by-id', noteId], optimisticNote)
-        
+
         // Update the note in recent and list queries
         queryClient.setQueriesData({ queryKey: ['notes', 'recent'] }, (old: Note[] | undefined) => {
           if (!old) return old
-          return old.map(note => note.id === noteId ? optimisticNote : note)
+          return old.map((note) => (note.id === noteId ? optimisticNote : note))
         })
         queryClient.setQueriesData({ queryKey: ['notes', 'list'] }, (old: Note[] | undefined) => {
           if (!old) return old
-          return old.map(note => note.id === noteId ? optimisticNote : note)
+          return old.map((note) => (note.id === noteId ? optimisticNote : note))
         })
       }
 
