@@ -16,6 +16,7 @@ import { ChatHistoryItem } from '@/components/chat-history-item'
 import { CommandChatItem } from '@/components/command-chat-item'
 import { CommandNoteItem } from '@/components/command-note-item'
 import { ContextSwitcher } from '@/components/context-switcher'
+import { FileTree } from '@/components/file-tree'
 import { NavUser } from '@/components/nav-user'
 import { NoteHistoryItem } from '@/components/note-history-item'
 import { OysterBadge } from '@/components/oyster-badge'
@@ -52,8 +53,10 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useDeleteChatMutation } from '@/mutations/chat'
 import { useCreateNoteMutation, useDeleteNoteMutation } from '@/mutations/note'
-import { useChats, useRecentChats } from '@/queries/chats'
-import { useNotes, useRecentNotes } from '@/queries/notes'
+import { useKeepPrevious } from '@/hooks/use-keep-previous'
+import { queryKeys } from '@/lib/query-keys'
+import { chatService } from '@/services/chat'
+import { noteService } from '@/services/note'
 
 function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -80,7 +83,17 @@ function useHistoryItems() {
   const { context } = useAppContext()
   const spaceId = context?.type === 'space' ? context.id : null
   const organizationId = context?.type === 'organization' ? context.id : null
-  const { data: chats } = useRecentChats(5, { spaceId, organizationId })
+  const { data: chats } = useKeepPrevious({
+    queryKey: queryKeys.chats.list({ recent: true, limit: 5, spaceId, organizationId }),
+    queryFn: () =>
+      chatService.listChats({
+        spaceId,
+        organizationId,
+        limit: 5,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
+      }),
+  })
   return (chats ?? []).map((c) => ({ id: c.id, title: c.title ?? 'Untitled' }))
 }
 
@@ -88,7 +101,17 @@ function useNotesHistoryItems() {
   const { context } = useAppContext()
   const spaceId = context?.type === 'space' ? context.id : null
   const organizationId = context?.type === 'organization' ? context.id : null
-  const { data: notes } = useRecentNotes(5, { spaceId, organizationId })
+  const { data: notes } = useKeepPrevious({
+    queryKey: queryKeys.notes.list({ recent: true, limit: 5, spaceId, organizationId }),
+    queryFn: () =>
+      noteService.listNotes({
+        spaceId,
+        organizationId,
+        limit: 5,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
+      }),
+  })
   return (notes ?? []).map((n) => ({ id: n.id, title: n.title ?? 'Untitled' }))
 }
 
@@ -272,18 +295,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const selectedSpaceId: string | null = context?.type === 'space' ? context.id : null
   const selectedOrgId: string | null = context?.type === 'organization' ? context.id : null
 
-  const { data: searchResults } = useChats({
-    spaceId: selectedSpaceId,
-    organizationId: selectedOrgId,
-    search,
-    limit: 20,
+  const { data: searchResults } = useKeepPrevious({
+    queryKey: queryKeys.chats.list({
+      spaceId: selectedSpaceId,
+      organizationId: selectedOrgId,
+      search: search || undefined,
+      limit: 20,
+    }),
+    queryFn: () =>
+      chatService.listChats({
+        spaceId: selectedSpaceId,
+        organizationId: selectedOrgId,
+        search: search || undefined,
+        limit: 20,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
+      }),
+    enabled: isSearchOpen,
   })
 
-  const { data: noteSearchResults } = useNotes({
-    spaceId: selectedSpaceId,
-    organizationId: selectedOrgId,
-    search,
-    limit: 20,
+  const { data: noteSearchResults } = useKeepPrevious({
+    queryKey: queryKeys.notes.list({
+      spaceId: selectedSpaceId,
+      organizationId: selectedOrgId,
+      search: search || undefined,
+      limit: 20,
+    }),
+    queryFn: () =>
+      noteService.listNotes({
+        spaceId: selectedSpaceId,
+        organizationId: selectedOrgId,
+        search: search || undefined,
+        limit: 20,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
+      }),
+    enabled: isSearchOpen,
   })
 
   async function handleNewChatClick() {
@@ -431,19 +478,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Files">
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    className="justify-start"
-                    onClick={() => router.push('/files', { scroll: false })}
-                  >
-                    <Folder className="size-4" />
-                    <span>Files</span>
-                  </Button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <Collapsible defaultOpen={true} asChild>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Files">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" type="button" className="justify-start">
+                        <Folder className="size-4" />
+                        <span>Files</span>
+                      </Button>
+                    </CollapsibleTrigger>
+                  </SidebarMenuButton>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuAction className="data-[state=open]:rotate-90">
+                      <ChevronRight />
+                      <span className="sr-only">Toggle</span>
+                    </SidebarMenuAction>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pl-2">
+                      <FileTree />
+                    </div>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
@@ -459,7 +516,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Chats">
+          <CommandGroup heading={search ? "Chats" : "Recent Chats"}>
             {(searchResults ?? []).map((chat) => (
               <CommandChatItem
                 key={chat.id}
@@ -469,7 +526,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               />
             ))}
           </CommandGroup>
-          <CommandGroup heading="Notes">
+          <CommandGroup heading={search ? "Notes" : "Recent Notes"}>
             {(noteSearchResults ?? []).map((note) => (
               <CommandNoteItem
                 key={note.id}

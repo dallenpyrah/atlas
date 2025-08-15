@@ -40,7 +40,7 @@ export function CommandNoteItem({ note, onClose, NoteActionsMenu }: CommandNoteI
       onSelect={() => {
         if (!isEditing) {
           onClose()
-          router.push(`/notes/${note.id}`)
+          router.push(`/notes/${note.id}`, { scroll: false })
         }
       }}
     >

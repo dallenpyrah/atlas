@@ -12,7 +12,9 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { useFiles, useFolderContents } from '@/queries/files'
+import { useKeepPrevious } from '@/hooks/use-keep-previous'
+import { queryKeys } from '@/lib/query-keys'
+import { fileService } from '@/services/file'
 import { CreateFolderDialog } from './create-folder-dialog'
 import { FileUploadDialog } from './file-upload-dialog'
 import { FilesDataTable } from './files-data-table'
@@ -31,19 +33,18 @@ export function FilesPageClient({ path }: FilesPageClientProps) {
   const spaceId = context?.type === 'space' ? context.id : undefined
   const organizationId = context?.type === 'organization' ? context.id : undefined
 
-  const rootFilesQuery = useFiles({
-    spaceId,
-    organizationId,
-    folderId: null,
+  const { data: rootFiles } = useKeepPrevious({
+    queryKey: queryKeys.files.list({ spaceId, organizationId, folderId: null }),
+    queryFn: () => fileService.listFiles({ spaceId, organizationId, folderId: null }),
   })
 
-  const folderContentsQuery = useFolderContents(currentFolderId, {
-    spaceId,
-    organizationId,
+  const { data: folderContents } = useKeepPrevious({
+    queryKey: queryKeys.files.folderContents(currentFolderId || '', { spaceId, organizationId }),
+    queryFn: () => fileService.getFolderContents(currentFolderId!, { spaceId, organizationId }),
+    enabled: Boolean(currentFolderId),
   })
 
-  const data = currentFolderId ? folderContentsQuery.data : rootFilesQuery.data
-  const isLoading = currentFolderId ? folderContentsQuery.isLoading : rootFilesQuery.isLoading
+  const data = currentFolderId ? folderContents : rootFiles
 
   useEffect(() => {
     if (!path || path.length === 0) {
@@ -86,20 +87,20 @@ export function FilesPageClient({ path }: FilesPageClientProps) {
 
   const navigateToFolder = (folderId: string | null, folderName?: string) => {
     if (folderId === null) {
-      router.push('/files')
+      router.push('/files', { scroll: false })
     } else if (folderName) {
       const currentPath = path ? [...path] : []
       currentPath.push(folderName)
-      router.push(`/files/${currentPath.join('/')}`)
+      router.push(`/files/${currentPath.join('/')}`, { scroll: false })
     }
   }
 
   const navigateToBreadcrumb = (index: number) => {
     if (index === -1) {
-      router.push('/files')
+      router.push('/files', { scroll: false })
     } else {
       const newPath = folderPath.slice(0, index + 1).map((f) => f.name)
-      router.push(`/files/${newPath.join('/')}`)
+      router.push(`/files/${newPath.join('/')}`, { scroll: false })
     }
   }
 
@@ -160,17 +161,11 @@ export function FilesPageClient({ path }: FilesPageClientProps) {
       </header>
 
       <div className="flex flex-1 flex-col p-6">
-        {isLoading ? (
-          <div className="flex h-[450px] items-center justify-center">
-            <div className="text-muted-foreground">Loading files...</div>
-          </div>
-        ) : (
-          <FilesDataTable
-            data={allItems}
-            onNavigateToFolder={navigateToFolder}
-            currentFolderId={currentFolderId}
-          />
-        )}
+        <FilesDataTable
+          data={allItems}
+          onNavigateToFolder={navigateToFolder}
+          currentFolderId={currentFolderId}
+        />
       </div>
     </>
   )

@@ -1,9 +1,9 @@
 'use client'
 
 import type { Route } from 'next'
-import Link from 'next/link'
 import { useState } from 'react'
 import { EditableTitle } from '@/components/ui/editable-title'
+import { PrefetchLink } from '@/components/ui/prefetch-link'
 import { SidebarMenuSubButton, SidebarMenuSubItem } from '@/components/ui/sidebar'
 import { useUpdateNoteMutation } from '@/mutations/note'
 
@@ -41,13 +41,13 @@ export function NoteHistoryItem({ note, NoteActionsMenu }: NoteHistoryItemProps)
             <NoteActionsMenu noteId={note.id} />
           </div>
         ) : (
-          <Link
+          <PrefetchLink
             href={`/notes/${note.id}` as Route}
             className="flex items-center justify-between w-full"
           >
             <span className="truncate">{note.title}</span>
             <NoteActionsMenu noteId={note.id} onEditClick={() => setIsEditing(true)} />
-          </Link>
+          </PrefetchLink>
         )}
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>

@@ -2,9 +2,9 @@
 
 import { useQueryClient } from '@tanstack/react-query'
 import type { Route } from 'next'
-import Link from 'next/link'
 import { useState } from 'react'
 import { EditableTitle } from '@/components/ui/editable-title'
+import { PrefetchLink } from '@/components/ui/prefetch-link'
 import { SidebarMenuSubButton, SidebarMenuSubItem } from '@/components/ui/sidebar'
 import { useUpdateChatMutation } from '@/mutations/chat'
 
@@ -44,13 +44,14 @@ export function ChatHistoryItem({ chat, ChatActionsMenu }: ChatHistoryItemProps)
             <ChatActionsMenu chatId={chat.id} />
           </div>
         ) : (
-          <Link
+          <PrefetchLink
             href={`/chat/${chat.id}` as Route}
+            scroll={true}
             className="flex items-center justify-between w-full"
           >
             <span className="truncate">{chat.title}</span>
             <ChatActionsMenu chatId={chat.id} onEditClick={() => setIsEditing(true)} />
-          </Link>
+          </PrefetchLink>
         )}
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>

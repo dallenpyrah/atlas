@@ -38,7 +38,7 @@ const defaultEditorState = {
     type: 'root',
     version: 1,
   },
-} as SerializedEditorState
+} as unknown as SerializedEditorState
 
 export function NotesClient({ noteId }: NotesClientProps) {
   const { data: note, isLoading } = useNoteById(noteId)
@@ -71,7 +71,7 @@ export function NotesClient({ noteId }: NotesClientProps) {
   }
 
   return (
-    <div className="h-full bg-background">
+    <div className="h-full bg-background flex flex-col min-h-0">
       <Editor
         editorSerializedState={initialContent}
         onSerializedChange={(serializedState) => {

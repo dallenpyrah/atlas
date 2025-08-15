@@ -1,7 +1,7 @@
 'use client'
 
-import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import type { QueryKey, QueryFunction, UseQueryResult } from '@tanstack/react-query'
+import type { QueryFunction, QueryKey } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 const DEFAULT_STALE_TIME_MS = 30_000
 const QUERY_SIMILARITY_PREFIX_LENGTH = 3
@@ -19,10 +19,16 @@ export interface ZeroLoadingStateQueryOptions<
   enabled?: boolean
 }
 
-export interface ZeroLoadingStateQueryResult<TData = unknown>
-  extends UseQueryResult<TData> {
+export interface ZeroLoadingStateQueryResult<TData = unknown> {
+  data: TData | undefined
+  isPending: boolean
+  isLoading: boolean
+  isError: boolean
+  error: Error | null
+  isFetching: boolean
   isPlaceholderData: boolean
   isShowingPreviousData: boolean
+  refetch: () => void
 }
 
 export function useKeepPrevious<
@@ -30,7 +36,7 @@ export function useKeepPrevious<
   TData = TQueryFnData,
   TQueryKey extends QueryKey = QueryKey,
 >(
-  options: ZeroLoadingStateQueryOptions<TQueryFnData, TData, TQueryKey>
+  options: ZeroLoadingStateQueryOptions<TQueryFnData, TData, TQueryKey>,
 ): ZeroLoadingStateQueryResult<TData> {
   const queryResult = useQuery({
     ...options,
@@ -38,8 +44,15 @@ export function useKeepPrevious<
   })
 
   return {
-    ...queryResult,
+    data: queryResult.data,
+    isPending: queryResult.isPending,
+    isLoading: queryResult.isLoading,
+    isError: queryResult.isError,
+    error: queryResult.error,
+    isFetching: queryResult.isFetching,
+    isPlaceholderData: queryResult.isPlaceholderData,
     isShowingPreviousData: queryResult.isPlaceholderData,
+    refetch: queryResult.refetch,
   }
 }
 
@@ -56,7 +69,7 @@ export interface ConditionalKeepPreviousOptions<
   enabled?: boolean
   shouldKeepPrevious?: (
     previousData: TQueryFnData | undefined,
-    previousQuery: { queryKey: TQueryKey } | undefined
+    previousQuery: { queryKey: TQueryKey } | undefined,
   ) => boolean
 }
 
@@ -65,20 +78,29 @@ export function useKeepPreviousWithControl<
   TData = TQueryFnData,
   TQueryKey extends QueryKey = QueryKey,
 >(
-  options: ConditionalKeepPreviousOptions<TQueryFnData, TData, TQueryKey>
+  options: ConditionalKeepPreviousOptions<TQueryFnData, TData, TQueryKey>,
 ): ZeroLoadingStateQueryResult<TData> {
   const { shouldKeepPrevious, ...queryOptions } = options
 
   const queryResult = useQuery({
     ...queryOptions,
-    placeholderData: shouldKeepPrevious ? (previousData, previousQuery) => {
-      return shouldKeepPrevious(previousData, previousQuery) ? previousData : undefined
-    } : keepPreviousData,
+    placeholderData: shouldKeepPrevious
+      ? (previousData, previousQuery) => {
+          return shouldKeepPrevious(previousData, previousQuery) ? previousData : undefined
+        }
+      : keepPreviousData,
   })
 
   return {
-    ...queryResult,
+    data: queryResult.data,
+    isPending: queryResult.isPending,
+    isLoading: queryResult.isLoading,
+    isError: queryResult.isError,
+    error: queryResult.error,
+    isFetching: queryResult.isFetching,
+    isPlaceholderData: queryResult.isPlaceholderData,
     isShowingPreviousData: queryResult.isPlaceholderData,
+    refetch: queryResult.refetch,
   }
 }
 
@@ -88,10 +110,7 @@ export interface DomainSpecificHookConfig {
   defaultGcTime?: number
 }
 
-export interface DomainSpecificQueryOptions<
-  TQueryFnData = unknown,
-  TData = TQueryFnData,
-> {
+export interface DomainSpecificQueryOptions<TQueryFnData = unknown, TData = TQueryFnData> {
   id: string
   queryFn: QueryFunction<TQueryFnData, readonly string[]>
   staleTime?: number
@@ -104,12 +123,11 @@ function buildQueryKeyWithId(baseKey: readonly string[], id: string) {
   return [...baseKey, 'by-id', id] as const
 }
 
-export function createKeepPreviousHook<
-  TQueryFnData = unknown,
-  TData = TQueryFnData,
->(config: DomainSpecificHookConfig) {
+export function createKeepPreviousHook<TQueryFnData = unknown, TData = TQueryFnData>(
+  config: DomainSpecificHookConfig,
+) {
   return function useDomainSpecificKeepPrevious(
-    options: DomainSpecificQueryOptions<TQueryFnData, TData>
+    options: DomainSpecificQueryOptions<TQueryFnData, TData>,
   ): ZeroLoadingStateQueryResult<TData> {
     const queryKey = buildQueryKeyWithId(config.baseKey, options.id)
 
@@ -133,12 +151,12 @@ export function createSearchKeepPreviousStrategy() {
   return (
     _previousData: unknown,
     previousQuery: { queryKey: QueryKey } | undefined,
-    currentQuery: string
+    currentQuery: string,
   ) => {
     if (!previousQuery?.queryKey[1]) {
       return false
     }
-    
+
     const previousQueryString = previousQuery.queryKey[1].toString()
     return isQuerySimilar(currentQuery, previousQueryString)
   }
@@ -146,14 +164,14 @@ export function createSearchKeepPreviousStrategy() {
 
 export function useSearchWithKeepPrevious<TData = unknown>(
   searchQuery: string,
-  searchFunction: (query: string) => Promise<TData>
+  searchFunction: (query: string) => Promise<TData>,
 ) {
   const searchStrategy = createSearchKeepPreviousStrategy()
-  
+
   return useKeepPreviousWithControl({
     queryKey: ['search', searchQuery] as const,
     queryFn: () => searchFunction(searchQuery),
-    shouldKeepPrevious: (previousData, previousQuery) => 
+    shouldKeepPrevious: (previousData, previousQuery) =>
       searchStrategy(previousData, previousQuery, searchQuery),
     staleTime: DEFAULT_STALE_TIME_MS,
   })

@@ -43,7 +43,7 @@ export function CommandChatItem({ chat, onClose, ChatActionsMenu }: CommandChatI
       onSelect={() => {
         if (!isEditing) {
           onClose()
-          router.push(`/chat/${chat.id}`)
+          router.push(`/chat/${chat.id}`, { scroll: false })
         }
       }}
     >

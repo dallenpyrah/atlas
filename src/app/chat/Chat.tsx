@@ -16,7 +16,9 @@ import { ScrollButton } from '@/components/ui/scroll-button'
 import { Tool, type ToolPart } from '@/components/ui/tool'
 import { cn } from '@/lib/utils'
 import { useCreateChatMutation, useUpdateChatMutation } from '@/mutations/chat'
-import { useChatById } from '@/queries/chats'
+import { useKeepPrevious } from '@/hooks/use-keep-previous'
+import { queryKeys } from '@/lib/query-keys'
+import { chatService } from '@/services/chat'
 
 type MessageComponentProps = {
   message: UIMessage
@@ -428,19 +430,11 @@ function ChatInner({
 type ChatProps = { chatId?: string; userId?: string; isNewChat?: boolean }
 
 function Chat({ chatId, userId, isNewChat }: ChatProps) {
-  const { data, isLoading, error } = useChatById(isNewChat ? undefined : chatId)
-
-  if (!isNewChat && chatId && isLoading) {
-    return (
-      <div className="flex h-[calc(92vh)] flex-col overflow-hidden">
-        <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
-          <ChatContainerContent className="space-y-6 px-4 py-12">
-            <LoadingMessage />
-          </ChatContainerContent>
-        </ChatContainerRoot>
-      </div>
-    )
-  }
+  const { data, error } = useKeepPrevious({
+    queryKey: queryKeys.chats.byId(chatId || ''),
+    queryFn: () => chatService.getChat(chatId!),
+    enabled: Boolean(chatId) && !isNewChat,
+  })
 
   if (!isNewChat && chatId && error) {
     return (

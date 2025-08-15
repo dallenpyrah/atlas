@@ -169,17 +169,35 @@ export function useUploadFileMutation(
   })
 }
 
+export interface UploadFilesResult {
+  successful: FileRecord[]
+  failed: Array<{ file: File; error: string }>
+}
+
 export function useUploadFilesMutation(
-  options?: UseMutationOptions<FileRecord[], Error, CreateFileParams[], UploadFileContext> & {
+  options?: UseMutationOptions<UploadFilesResult, Error, CreateFileParams[], UploadFileContext> & {
     onProgress?: (progress: UploadProgress) => void
   },
 ) {
   const queryClient = useQueryClient()
 
-  return useMutation<FileRecord[], Error, CreateFileParams[], UploadFileContext>({
+  return useMutation<UploadFilesResult, Error, CreateFileParams[], UploadFileContext>({
     mutationKey: ['files', 'upload-multiple'],
     mutationFn: async (paramsArray: CreateFileParams[]) => {
-      const results = []
+      const successful: FileRecord[] = []
+      const failed: Array<{ file: File; error: string }> = []
+      let completed = 0
+
+      const total = paramsArray.length
+      const updateProgress = () => {
+        options?.onProgress?.({
+          totalFiles: total,
+          completedFiles: completed,
+          failedFiles: failed.length,
+          percentage: Math.round((completed / total) * 100),
+        })
+      }
+
       for (const params of paramsArray) {
         try {
           const formData = new FormData()
@@ -196,11 +214,22 @@ export function useUploadFilesMutation(
 
           if (response.ok) {
             const result = await response.json()
-            results.push(result)
+            successful.push(result)
+          } else {
+            const errorText = await response.text()
+            failed.push({ file: params.file, error: errorText || 'Upload failed' })
           }
-        } catch (error) {}
+        } catch (error) {
+          failed.push({
+            file: params.file,
+            error: error instanceof Error ? error.message : 'Upload failed',
+          })
+        }
+        completed++
+        updateProgress()
       }
-      return results
+
+      return { successful, failed }
     },
     onMutate: async (paramsArray) => {
       const affectedQueries = new Set<string>()
@@ -250,7 +279,12 @@ export function useUploadFilesMutation(
         })
       })
 
-      affectedQueries.forEach((params) => {
+      affectedQueries.forEach((value) => {
+        const params = value as {
+          spaceId?: string
+          organizationId?: string
+          folderId?: string
+        }
         const listQueryKey = [
           'files',
           'list',
@@ -276,7 +310,17 @@ export function useUploadFilesMutation(
         }
       })
 
-      toast.success(`${data.length} file(s) uploaded successfully`)
+      const totalUploaded = data.successful.length
+      const totalFailed = data.failed.length
+      
+      if (totalFailed === 0) {
+        toast.success(`${totalUploaded} file(s) uploaded successfully`)
+      } else if (totalUploaded === 0) {
+        toast.error(`All ${totalFailed} file(s) failed to upload`)
+      } else {
+        toast.success(`${totalUploaded} file(s) uploaded successfully, ${totalFailed} failed`)
+      }
+      
       options?.onSuccess?.(data, vars, ctx)
     },
   })

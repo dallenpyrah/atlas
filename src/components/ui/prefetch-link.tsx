@@ -16,6 +16,7 @@ interface PrefetchLinkProps extends NextLinkProps {
   prefetchDelay?: number
   prefetchOnMount?: boolean
   prefetchEnabled?: boolean
+  scroll?: boolean
 }
 
 interface RouteParams {
@@ -60,6 +61,7 @@ export function PrefetchLink({
   prefetchDelay = 50,
   prefetchOnMount = false,
   prefetchEnabled = true,
+  scroll = false,
   onMouseEnter,
   onFocus,
   children,
@@ -223,6 +225,7 @@ export function PrefetchLink({
   return (
     <NextLink
       href={href}
+      scroll={scroll}
       onMouseEnter={handleMouseEnter}
       onFocus={handleFocus}
       onMouseLeave={handleMouseLeave}

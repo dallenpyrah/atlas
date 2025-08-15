@@ -5,7 +5,6 @@ import {
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
 } from '@lexical/markdown'
-import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin'
 import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin'
 import { ClickableLinkPlugin } from '@lexical/react/LexicalClickableLinkPlugin'
@@ -131,7 +130,7 @@ export function Plugins({}) {
   }
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="relative flex h-full min-h-0 flex-col">
       <ToolbarPlugin>
         {({ blockType }) => (
           <div className="vertical-align-middle flex gap-2 overflow-auto border-b pb-2 pl-1.5 flex-shrink-0">
@@ -184,15 +183,14 @@ export function Plugins({}) {
           </div>
         )}
       </ToolbarPlugin>
-      <div className="relative flex-1 overflow-hidden">
-        <AutoFocusPlugin />
+      <div className="relative flex-1 min-h-0 overflow-auto">
         <RichTextPlugin
           contentEditable={
-            <div className="h-full overflow-auto">
-              <div className="h-full" ref={onRef}>
+            <div className="h-full min-h-0">
+              <div className="min-h-full" ref={onRef}>
                 <ContentEditable
                   placeholder={placeholder}
-                  className="ContentEditable__root relative block min-h-full px-6 py-4 focus:outline-none"
+                  className="ContentEditable__root relative block flex-1 min-h-0 overflow-hidden px-6 py-4 focus:outline-none"
                 />
               </div>
             </div>
