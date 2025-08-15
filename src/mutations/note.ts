@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { queryKeys } from '@/lib/query-keys'
 import { type CreateNoteParams, type Note, noteService } from '@/services/note'
 
 type CreateNoteResult = Note
@@ -36,8 +37,8 @@ export function useCreateNoteMutation(
     mutationKey: ['notes', 'create'],
     mutationFn: (params: CreateNoteParams) => noteService.createNote(params),
     onMutate: async (newNote) => {
-      await queryClient.cancelQueries({ queryKey: ['notes', 'list'] })
-      await queryClient.cancelQueries({ queryKey: ['notes', 'recent'] })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.list() })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.list({ recent: true }) })
 
       const optimisticNote: Note = {
         id: `temp-${Date.now()}`,
@@ -52,14 +53,17 @@ export function useCreateNoteMutation(
         updatedAt: new Date().toISOString(),
       }
 
-      const previousLists = queryClient.getQueriesData({ queryKey: ['notes', 'list'] })
-      const previousRecent = queryClient.getQueriesData({ queryKey: ['notes', 'recent'] })
+      const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notes.list() })
+      const previousRecent = queryClient.getQueriesData({
+        queryKey: queryKeys.notes.list({ recent: true }),
+      })
 
-      queryClient.setQueriesData({ queryKey: ['notes', 'list'] }, (old: Note[] | undefined) =>
+      queryClient.setQueriesData({ queryKey: queryKeys.notes.list() }, (old: Note[] | undefined) =>
         old ? [optimisticNote, ...old] : [optimisticNote],
       )
-      queryClient.setQueriesData({ queryKey: ['notes', 'recent'] }, (old: Note[] | undefined) =>
-        old ? [optimisticNote, ...old] : [optimisticNote],
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.notes.list({ recent: true }) },
+        (old: Note[] | undefined) => (old ? [optimisticNote, ...old] : [optimisticNote]),
       )
 
       return { previousLists, previousRecent, optimisticNote }
@@ -79,8 +83,7 @@ export function useCreateNoteMutation(
       options?.onError?.(error, vars, context)
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['notes', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['notes', 'recent'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notes.all() })
       options?.onSuccess?.(data, vars, ctx)
     },
   })
@@ -106,11 +109,11 @@ export function useUpdateNoteMutation(
     mutationKey: ['notes', 'update'],
     mutationFn: ({ noteId, updates }: UpdateNoteParams) => noteService.updateNote(noteId, updates),
     onMutate: async ({ noteId, updates }) => {
-      await queryClient.cancelQueries({ queryKey: ['notes', 'by-id', noteId] })
-      await queryClient.cancelQueries({ queryKey: ['notes', 'recent'] })
-      await queryClient.cancelQueries({ queryKey: ['notes', 'list'] })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.byId(noteId) })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.list({ recent: true }) })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.list() })
 
-      const previousNote = queryClient.getQueryData<Note>(['notes', 'by-id', noteId])
+      const previousNote = queryClient.getQueryData<Note>(queryKeys.notes.byId(noteId))
 
       if (previousNote) {
         const optimisticNote = {
@@ -118,38 +121,42 @@ export function useUpdateNoteMutation(
           ...updates,
           updatedAt: new Date().toISOString(),
         }
-        queryClient.setQueryData(['notes', 'by-id', noteId], optimisticNote)
+        queryClient.setQueryData(queryKeys.notes.byId(noteId), optimisticNote)
 
-        // Update the note in recent and list queries
-        queryClient.setQueriesData({ queryKey: ['notes', 'recent'] }, (old: Note[] | undefined) => {
-          if (!old) return old
-          return old.map((note) => (note.id === noteId ? optimisticNote : note))
-        })
-        queryClient.setQueriesData({ queryKey: ['notes', 'list'] }, (old: Note[] | undefined) => {
-          if (!old) return old
-          return old.map((note) => (note.id === noteId ? optimisticNote : note))
-        })
+        queryClient.setQueriesData(
+          { queryKey: queryKeys.notes.list({ recent: true }) },
+          (old: Note[] | undefined) => {
+            if (!old) return old
+            return old.map((note) => (note.id === noteId ? optimisticNote : note))
+          },
+        )
+        queryClient.setQueriesData(
+          { queryKey: queryKeys.notes.list() },
+          (old: Note[] | undefined) => {
+            if (!old) return old
+            return old.map((note) => (note.id === noteId ? optimisticNote : note))
+          },
+        )
       }
 
       return { previousNote }
     },
     onError: (error, { noteId }, context) => {
       if (context?.previousNote) {
-        queryClient.setQueryData(['notes', 'by-id', noteId], context.previousNote)
+        queryClient.setQueryData(queryKeys.notes.byId(noteId), context.previousNote)
       }
       toast.error(error.message || 'Failed to update note')
       options?.onError?.(error, { noteId, updates: {} }, context)
     },
     onSuccess: (data, vars, ctx) => {
-      queryClient.setQueryData(['notes', 'by-id', vars.noteId], data)
+      queryClient.setQueryData(queryKeys.notes.byId(vars.noteId), data)
 
       const titleChanged = vars.updates.title !== undefined
       const metadataChanged = vars.updates.metadata !== undefined
       const pinChanged = vars.updates.isPinned !== undefined
 
       if (titleChanged || metadataChanged || pinChanged) {
-        void queryClient.invalidateQueries({ queryKey: ['notes', 'list'] })
-        void queryClient.invalidateQueries({ queryKey: ['notes', 'recent'] })
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notes.all() })
       }
 
       options?.onSuccess?.(data, vars, ctx)
@@ -169,28 +176,31 @@ export function useDeleteNoteMutation(
     mutationKey: ['notes', 'delete'],
     mutationFn: ({ noteId }: DeleteNoteParams) => noteService.deleteNote(noteId),
     onMutate: async ({ noteId }) => {
-      await queryClient.cancelQueries({ queryKey: ['notes', 'by-id', noteId] })
-      await queryClient.cancelQueries({ queryKey: ['notes', 'list'] })
-      await queryClient.cancelQueries({ queryKey: ['notes', 'recent'] })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.byId(noteId) })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.list() })
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes.list({ recent: true }) })
 
-      const previousNote = queryClient.getQueryData<Note>(['notes', 'by-id', noteId])
-      const previousLists = queryClient.getQueriesData({ queryKey: ['notes', 'list'] })
-      const previousRecent = queryClient.getQueriesData({ queryKey: ['notes', 'recent'] })
+      const previousNote = queryClient.getQueryData<Note>(queryKeys.notes.byId(noteId))
+      const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notes.list() })
+      const previousRecent = queryClient.getQueriesData({
+        queryKey: queryKeys.notes.list({ recent: true }),
+      })
 
-      queryClient.removeQueries({ queryKey: ['notes', 'by-id', noteId] })
+      queryClient.removeQueries({ queryKey: queryKeys.notes.byId(noteId) })
 
-      queryClient.setQueriesData({ queryKey: ['notes', 'list'] }, (old: Note[] | undefined) =>
+      queryClient.setQueriesData({ queryKey: queryKeys.notes.list() }, (old: Note[] | undefined) =>
         old ? old.filter((note) => note.id !== noteId) : [],
       )
-      queryClient.setQueriesData({ queryKey: ['notes', 'recent'] }, (old: Note[] | undefined) =>
-        old ? old.filter((note) => note.id !== noteId) : [],
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.notes.list({ recent: true }) },
+        (old: Note[] | undefined) => (old ? old.filter((note) => note.id !== noteId) : []),
       )
 
       return { previousNote, previousLists, previousRecent }
     },
     onError: (error, { noteId }, context) => {
       if (context?.previousNote) {
-        queryClient.setQueryData(['notes', 'by-id', noteId], context.previousNote)
+        queryClient.setQueryData(queryKeys.notes.byId(noteId), context.previousNote)
       }
       if (context?.previousLists) {
         context.previousLists.forEach(([queryKey, data]) => {
@@ -206,9 +216,8 @@ export function useDeleteNoteMutation(
       options?.onError?.(error, { noteId }, context)
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.removeQueries({ queryKey: ['notes', 'by-id', vars.noteId] })
-      void queryClient.invalidateQueries({ queryKey: ['notes', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['notes', 'recent'] })
+      void queryClient.removeQueries({ queryKey: queryKeys.notes.byId(vars.noteId), exact: true })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notes.all() })
       toast.success('Note deleted')
       options?.onSuccess?.(data, vars, ctx)
     },

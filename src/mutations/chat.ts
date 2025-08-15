@@ -2,6 +2,7 @@
 
 import { type UseMutationOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { queryKeys } from '@/lib/query-keys'
 import { type Chat, type CreateChatParams, chatService } from '@/services/chat'
 
 type CreateChatResult = Chat
@@ -14,7 +15,7 @@ export function useCreateChatMutation(
   const merged: UseMutationOptions<CreateChatResult, Error, CreateChatParams> = {
     ...(options || {}),
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['chats'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats.all() })
       options?.onSuccess?.(data, vars, ctx)
     },
     onError: (error, vars, ctx) => {
@@ -65,7 +66,7 @@ export function useDeleteChatMutation(
   const merged: UseMutationOptions<DeleteChatResult, Error, DeleteChatParams> = {
     ...(options || {}),
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['chats'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats.all() })
       toast.success('Chat deleted')
       options?.onSuccess?.(data, vars, ctx)
     },

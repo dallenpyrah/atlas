@@ -1,22 +1,22 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { authClient } from '@/clients/auth'
+import { queryKeys } from '@/lib/query-keys'
 
 export function useOrganizations() {
   return useQuery({
-    queryKey: ['organizations', 'list'],
+    queryKey: queryKeys.organizations.list(),
     queryFn: async () => {
       const response = await authClient.organization.list()
       return response.data ?? []
     },
-    staleTime: 60_000,
   })
 }
 
 export function useActiveOrganization() {
   return useQuery({
-    queryKey: ['organizations', 'active'],
+    queryKey: queryKeys.organizations.active(),
     queryFn: async () => {
       const sessionResponse = await authClient.getSession()
       const activeOrgId = sessionResponse.data?.session?.activeOrganizationId
@@ -26,13 +26,27 @@ export function useActiveOrganization() {
       const orgs = orgsResponse.data ?? []
       return orgs.find((org) => org.id === activeOrgId) ?? null
     },
-    staleTime: 60_000,
+  })
+}
+
+export function useActiveOrganizationSuspense() {
+  return useSuspenseQuery({
+    queryKey: queryKeys.organizations.active(),
+    queryFn: async () => {
+      const sessionResponse = await authClient.getSession()
+      const activeOrgId = sessionResponse.data?.session?.activeOrganizationId
+      if (!activeOrgId) return null
+
+      const orgsResponse = await authClient.organization.list()
+      const orgs = orgsResponse.data ?? []
+      return orgs.find((org) => org.id === activeOrgId) ?? null
+    },
   })
 }
 
 export function useOrganizationMembers(organizationId?: string) {
   return useQuery({
-    queryKey: ['organizations', 'members', organizationId],
+    queryKey: queryKeys.organizations.members(organizationId),
     queryFn: async () => {
       if (!organizationId) return []
       const response = await authClient.organization.listMembers({
@@ -44,13 +58,12 @@ export function useOrganizationMembers(organizationId?: string) {
       return response.data ?? []
     },
     enabled: Boolean(organizationId),
-    staleTime: 60_000,
   })
 }
 
 export function useOrganizationInvitations(organizationId?: string) {
   return useQuery({
-    queryKey: ['organizations', 'invitations', organizationId],
+    queryKey: queryKeys.organizations.invitations(organizationId),
     queryFn: async () => {
       if (!organizationId) return []
       const response = await authClient.organization.listInvitations({
@@ -61,17 +74,15 @@ export function useOrganizationInvitations(organizationId?: string) {
       return response.data ?? []
     },
     enabled: Boolean(organizationId),
-    staleTime: 60_000,
   })
 }
 
 export function useUserInvitations() {
   return useQuery({
-    queryKey: ['organizations', 'user-invitations'],
+    queryKey: queryKeys.organizations.userInvitations(),
     queryFn: async () => {
       const response = await authClient.organization.listUserInvitations()
       return response.data ?? []
     },
-    staleTime: 60_000,
   })
 }

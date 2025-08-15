@@ -203,30 +203,22 @@ export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
         const { state } = editor
         const { $from } = state.selection
         const currentLineText = $from.parent.textBetween(0, $from.parentOffset, '\n', ' ')
-        
+
         const slashMatch = currentLineText.match(/\/\S*$/)
-        
+
         if (slashMatch) {
           const slashStart = $from.start() + currentLineText.lastIndexOf(slashMatch[0])
           const slashEnd = $from.pos
-          
+
           const isEntireContent = currentLineText.trim() === slashMatch[0]
-          
+
           if (isEntireContent) {
-            editor
-              .chain()
-              .focus()
-              .selectParentNode()
-              .run()
-            
+            editor.chain().focus().selectParentNode().run()
+
             commandFn(editor)
           } else {
-            editor
-              .chain()
-              .focus()
-              .deleteRange({ from: slashStart, to: slashEnd })
-              .run()
-            
+            editor.chain().focus().deleteRange({ from: slashStart, to: slashEnd }).run()
+
             commandFn(editor)
           }
         } else {

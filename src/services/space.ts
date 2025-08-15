@@ -49,6 +49,10 @@ class SpaceService {
   async listSpaces(params?: {
     organizationId?: string | null
     userId?: string | null
+    search?: string
+    limit?: number
+    sortBy?: 'updatedAt' | 'createdAt' | 'name'
+    sortOrder?: 'asc' | 'desc'
   }): Promise<Space[]> {
     const searchParams = new URLSearchParams()
     if (params?.organizationId) {
@@ -56,6 +60,18 @@ class SpaceService {
     }
     if (params?.userId) {
       searchParams.set('userId', params.userId)
+    }
+    if (params?.search) {
+      searchParams.set('search', params.search)
+    }
+    if (params?.limit) {
+      searchParams.set('limit', params.limit.toString())
+    }
+    if (params?.sortBy) {
+      searchParams.set('sortBy', params.sortBy)
+    }
+    if (params?.sortOrder) {
+      searchParams.set('sortOrder', params.sortOrder)
     }
 
     const url = searchParams.toString()

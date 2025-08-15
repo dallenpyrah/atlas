@@ -1,6 +1,7 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
 import { type Space, type SpaceWithMembers, spaceService } from '@/services/space'
 
 export function useSpaces(params?: {
@@ -8,9 +9,34 @@ export function useSpaces(params?: {
   userId?: string | null
   search?: string
   limit?: number
+  sortBy?: 'updatedAt' | 'createdAt' | 'name'
+  sortOrder?: 'asc' | 'desc'
 }) {
   return useQuery<Space[]>({
-    queryKey: ['spaces', 'list', params],
+    queryKey: queryKeys.spaces.list(params),
+    queryFn: async () => {
+      return spaceService.listSpaces({
+        organizationId: params?.organizationId ?? null,
+        userId: params?.userId ?? null,
+        search: params?.search,
+        limit: params?.limit,
+        sortBy: params?.sortBy ?? 'updatedAt',
+        sortOrder: params?.sortOrder ?? 'desc',
+      })
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
+  })
+}
+
+export function useSpacesSuspense(params?: {
+  organizationId?: string | null
+  userId?: string | null
+  search?: string
+  limit?: number
+}) {
+  return useSuspenseQuery<Space[]>({
+    queryKey: queryKeys.spaces.list(params),
     queryFn: async () => {
       const list = await spaceService.listSpaces({
         organizationId: params?.organizationId ?? null,
@@ -31,13 +57,12 @@ export function useSpaces(params?: {
       )
       return typeof params?.limit === 'number' ? sorted.slice(0, params.limit) : sorted
     },
-    staleTime: 60_000,
   })
 }
 
 export function useSpace(spaceId?: string) {
   return useQuery<SpaceWithMembers | undefined>({
-    queryKey: ['spaces', 'by-id', spaceId],
+    queryKey: spaceId ? queryKeys.spaces.byId(spaceId) : ['spaces', 'by-id', undefined],
     queryFn: async () => {
       if (!spaceId) {
         return undefined
@@ -45,7 +70,6 @@ export function useSpace(spaceId?: string) {
       return spaceService.getSpace(spaceId)
     },
     enabled: Boolean(spaceId),
-    staleTime: 60_000,
   })
 }
 
@@ -53,13 +77,14 @@ export function useRecentSpaces(limit: number = 5) {
   return useQuery<Space[]>({
     queryKey: ['spaces', 'recent', { limit }],
     queryFn: async () => {
-      const all = await spaceService.listSpaces()
-      const sorted = [...all].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      )
-      return sorted.slice(0, limit)
+      return spaceService.listSpaces({
+        limit,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
+      })
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
   })
 }
 
@@ -73,7 +98,6 @@ export function useUserSpaces(userId?: string) {
       return spaceService.listSpaces({ userId })
     },
     enabled: Boolean(userId),
-    staleTime: 60_000,
   })
 }
 
@@ -87,6 +111,5 @@ export function useOrganizationSpaces(organizationId?: string) {
       return spaceService.listSpaces({ organizationId })
     },
     enabled: Boolean(organizationId),
-    staleTime: 60_000,
   })
 }

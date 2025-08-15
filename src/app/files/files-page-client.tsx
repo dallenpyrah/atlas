@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import React, { useEffect, useState } from 'react'
 import { useAppContext } from '@/components/providers/context-provider'
 import {
   Breadcrumb,
@@ -98,7 +98,7 @@ export function FilesPageClient({ path }: FilesPageClientProps) {
     if (index === -1) {
       router.push('/files')
     } else {
-      const newPath = folderPath.slice(0, index + 1).map(f => f.name)
+      const newPath = folderPath.slice(0, index + 1).map((f) => f.name)
       router.push(`/files/${newPath.join('/')}`)
     }
   }
@@ -158,7 +158,7 @@ export function FilesPageClient({ path }: FilesPageClientProps) {
           />
         </div>
       </header>
-      
+
       <div className="flex flex-1 flex-col p-6">
         {isLoading ? (
           <div className="flex h-[450px] items-center justify-center">

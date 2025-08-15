@@ -9,6 +9,7 @@ import {
   uploadFileToBlob,
 } from './client'
 import {
+  type FileRecord,
   generateFilePath,
   getSpaceOrganizationId,
   serializeFile,
@@ -17,7 +18,6 @@ import {
   validateFileSize,
   verifyOrganizationMembership,
   verifySpaceAccess,
-  type FileRecord,
 } from './utils'
 
 export async function uploadFile(params: {
@@ -198,7 +198,7 @@ export async function updateFile(
     }
 
     const updateData: any = {}
-    
+
     if (updates.name !== undefined) {
       if (!validateFileName(updates.name)) {
         return { success: false, error: 'Invalid file name' }
@@ -206,17 +206,21 @@ export async function updateFile(
       updateData.filename = updates.name
     }
 
-    if (updates.parentId !== undefined || updates.path !== undefined || updates.metadata !== undefined) {
+    if (
+      updates.parentId !== undefined ||
+      updates.path !== undefined ||
+      updates.metadata !== undefined
+    ) {
       const currentMetadata = (file.metadata as any) || {}
       updateData.metadata = {
         ...currentMetadata,
         ...(updates.metadata || {}),
       }
-      
+
       if (updates.parentId !== undefined) {
         updateData.metadata.parentId = updates.parentId
       }
-      
+
       if (updates.path !== undefined) {
         updateData.metadata.path = updates.path
       }
@@ -256,11 +260,7 @@ export async function deleteFile(fileId: string, userId: string) {
   }
 }
 
-export async function moveFile(
-  fileId: string,
-  targetParentId: string | null,
-  userId: string,
-) {
+export async function moveFile(fileId: string, targetParentId: string | null, userId: string) {
   try {
     const file = await fetchFileById(fileId)
 

@@ -23,6 +23,12 @@ type Chat = {
 
 type ChatWithMessages = Chat & { messages: UIMessage[] }
 
+type PaginatedChats = {
+  items: Chat[]
+  hasMore: boolean
+  nextOffset?: number
+}
+
 async function handleJsonResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     try {
@@ -53,10 +59,18 @@ export const chatService = {
   async listChats(params?: {
     spaceId?: string | null
     organizationId?: string | null
+    search?: string
+    limit?: number
+    sortBy?: 'updatedAt' | 'createdAt'
+    sortOrder?: 'asc' | 'desc'
   }): Promise<Chat[]> {
     const search = new URLSearchParams()
     if (params?.spaceId) search.set('spaceId', params.spaceId)
     if (params?.organizationId) search.set('organizationId', params.organizationId)
+    if (params?.search) search.set('search', params.search)
+    if (params?.limit) search.set('limit', params.limit.toString())
+    if (params?.sortBy) search.set('sortBy', params.sortBy)
+    if (params?.sortOrder) search.set('sortOrder', params.sortOrder)
     const query = search.toString()
     const url = query ? `/api/chats?${query}` : '/api/chats'
     const res = await fetch(url, { method: 'GET' })
@@ -81,6 +95,37 @@ export const chatService = {
     })
     return handleJsonResponse(res)
   },
+
+  async listChatsPaginated(params?: {
+    spaceId?: string | null
+    organizationId?: string | null
+    search?: string
+    limit?: number
+    offset?: number
+    sortBy?: 'updatedAt' | 'createdAt'
+    sortOrder?: 'asc' | 'desc'
+  }): Promise<PaginatedChats> {
+    const search = new URLSearchParams()
+    if (params?.spaceId) search.set('spaceId', params.spaceId)
+    if (params?.organizationId) search.set('organizationId', params.organizationId)
+    if (params?.search) search.set('search', params.search)
+    const limit = params?.limit ?? 20
+    const offset = params?.offset ?? 0
+    search.set('limit', limit.toString())
+    search.set('offset', offset.toString())
+    if (params?.sortBy) search.set('sortBy', params.sortBy)
+    if (params?.sortOrder) search.set('sortOrder', params.sortOrder)
+    const query = search.toString()
+    const url = query ? `/api/chats?${query}` : '/api/chats'
+    const res = await fetch(url, { method: 'GET' })
+    const items = await handleJsonResponse<Chat[]>(res)
+    const hasMore = items.length === limit
+    return {
+      items,
+      hasMore,
+      nextOffset: hasMore ? offset + items.length : undefined,
+    }
+  },
 }
 
-export type { CreateChatParams, Chat, ChatWithMessages }
+export type { CreateChatParams, Chat, ChatWithMessages, PaginatedChats }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { listFiles, uploadFile } from './service'
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch files' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to upload file' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

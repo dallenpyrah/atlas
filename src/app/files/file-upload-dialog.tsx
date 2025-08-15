@@ -13,7 +13,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { useUploadFilesMutation } from '@/mutations/file'
+import { Progress } from '@/components/ui/progress'
+import { type UploadProgress, useUploadFilesMutation } from '@/mutations/file'
 import { useCurrentUser } from '@/queries/auth'
 
 interface FileUploadDialogProps {
@@ -31,8 +32,11 @@ export function FileUploadDialog({
 }: FileUploadDialogProps) {
   const [open, setOpen] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
   const { data: session } = useCurrentUser()
-  const { mutateAsync: uploadFiles, isPending } = useUploadFilesMutation()
+  const { mutateAsync: uploadFiles, isPending } = useUploadFilesMutation({
+    onProgress: setUploadProgress,
+  })
 
   const handleUpload = async () => {
     if (!session?.user || selectedFiles.length === 0) return
@@ -45,9 +49,20 @@ export function FileUploadDialog({
       folderPath: folderPath || '/',
     }))
 
-    await uploadFiles(uploadParams)
-    setSelectedFiles([])
-    setOpen(false)
+    try {
+      const result = await uploadFiles(uploadParams)
+
+      if (result.failed.length > 0) {
+        console.warn('Some files failed to upload:', result.failed)
+      }
+
+      setSelectedFiles([])
+      setUploadProgress(null)
+      setOpen(false)
+    } catch (error) {
+      console.error('Upload error:', error)
+      setUploadProgress(null)
+    }
   }
 
   return (
@@ -68,13 +83,28 @@ export function FileUploadDialog({
         </DialogHeader>
         <div className="py-4">
           <FileUploadDropzone onDrop={setSelectedFiles} disabled={isPending} />
+          {isPending && uploadProgress && (
+            <div className="mt-4 space-y-2">
+              <div className="text-sm text-muted-foreground">
+                Uploading {uploadProgress.completedFiles} of {uploadProgress.totalFiles} files...
+                {uploadProgress.failedFiles > 0 && (
+                  <span className="text-destructive ml-2">
+                    ({uploadProgress.failedFiles} failed)
+                  </span>
+                )}
+              </div>
+              <Progress value={uploadProgress.percentage} className="w-full" />
+            </div>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
             Cancel
           </Button>
           <Button onClick={handleUpload} disabled={selectedFiles.length === 0 || isPending}>
-            {isPending ? 'Uploading...' : `Upload ${selectedFiles.length} file(s)`}
+            {isPending
+              ? `Uploading... ${uploadProgress?.percentage || 0}%`
+              : `Upload ${selectedFiles.length} file(s)`}
           </Button>
         </DialogFooter>
       </DialogContent>

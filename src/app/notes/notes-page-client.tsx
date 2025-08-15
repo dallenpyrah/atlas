@@ -7,10 +7,10 @@ import { useAppContext } from '@/components/providers/context-provider'
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-  BreadcrumbLink,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -23,7 +23,6 @@ interface NotesPageClientProps {
 }
 
 export function NotesPageClient({ noteId }: NotesPageClientProps) {
-
   const router = useRouter()
   const { context } = useAppContext()
   const spaceId = context?.type === 'space' ? context.id : null
@@ -116,7 +115,9 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink className="cursor-default pointer-events-none">Notes</BreadcrumbLink>
+                <BreadcrumbLink className="cursor-default pointer-events-none">
+                  Notes
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>

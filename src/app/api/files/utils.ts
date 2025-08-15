@@ -84,19 +84,15 @@ export function validateFileOwnership(file: FileRecord, userId: string): boolean
   return file.userId === userId
 }
 
-export function generateFilePath(
-  userId: string,
-  fileName: string,
-  parentId?: string,
-): string {
+export function generateFilePath(userId: string, fileName: string, parentId?: string): string {
   const timestamp = Date.now()
   const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
   const parts = [userId]
-  
+
   if (parentId) {
     parts.push(parentId)
   }
-  
+
   parts.push(`${timestamp}_${safeName}`)
   return parts.join('/')
 }
@@ -108,6 +104,10 @@ export function serializeFile(file: any): FileRecord {
     uploadedAt: file.uploadedAt instanceof Date ? file.uploadedAt.toISOString() : file.uploadedAt,
     createdAt: file.createdAt instanceof Date ? file.createdAt.toISOString() : file.createdAt,
     updatedAt: file.updatedAt instanceof Date ? file.updatedAt.toISOString() : file.updatedAt,
-    processedAt: file.processedAt ? (file.processedAt instanceof Date ? file.processedAt.toISOString() : file.processedAt) : null,
+    processedAt: file.processedAt
+      ? file.processedAt instanceof Date
+        ? file.processedAt.toISOString()
+        : file.processedAt
+      : null,
   }
 }

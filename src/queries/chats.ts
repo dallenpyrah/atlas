@@ -1,8 +1,9 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useAppContext } from '@/components/providers/context-provider'
-import { type Chat, type ChatWithMessages, chatService } from '@/services/chat'
+import { queryKeys } from '@/lib/query-keys'
+import { type Chat, type ChatWithMessages, chatService, type PaginatedChats } from '@/services/chat'
 
 export function useRecentChats(
   limit: number = 5,
@@ -11,29 +12,27 @@ export function useRecentChats(
   return useQuery<Chat[]>({
     queryKey: ['chats', 'recent', { limit, params }],
     queryFn: async () => {
-      const all = await chatService.listChats({
+      return chatService.listChats({
         spaceId: params?.spaceId ?? null,
         organizationId: params?.organizationId ?? null,
+        limit,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
       })
-      // API already returns sorted by updatedAt desc server-side; guard-sort client for safety
-      const sorted = [...all].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      )
-      return sorted.slice(0, limit)
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
   })
 }
 
 export function useChatById(chatId?: string) {
   return useQuery<ChatWithMessages | undefined>({
-    queryKey: ['chats', 'by-id', chatId],
+    queryKey: chatId ? queryKeys.chats.byId(chatId) : ['chats', 'by-id', undefined],
     queryFn: async () => {
       if (!chatId) return undefined
       return chatService.getChat(chatId)
     },
     enabled: Boolean(chatId),
-    staleTime: 60_000,
   })
 }
 
@@ -42,22 +41,23 @@ export function useChats(params?: {
   organizationId?: string | null
   search?: string
   limit?: number
+  sortBy?: 'updatedAt' | 'createdAt'
+  sortOrder?: 'asc' | 'desc'
 }) {
   return useQuery<Chat[]>({
-    queryKey: ['chats', 'list', params],
+    queryKey: queryKeys.chats.list(params),
     queryFn: async () => {
-      const list = await chatService.listChats({
+      return chatService.listChats({
         spaceId: params?.spaceId ?? null,
         organizationId: params?.organizationId ?? null,
+        search: params?.search,
+        limit: params?.limit,
+        sortBy: params?.sortBy ?? 'updatedAt',
+        sortOrder: params?.sortOrder ?? 'desc',
       })
-      const filtered = params?.search
-        ? list.filter((c) =>
-            (c.title ?? 'Untitled').toLowerCase().includes(params.search!.toLowerCase()),
-          )
-        : list
-      return typeof params?.limit === 'number' ? filtered.slice(0, params.limit) : filtered
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
   })
 }
 
@@ -66,4 +66,48 @@ export function useContextChats(params?: { search?: string; limit?: number }) {
   const spaceId = context?.type === 'space' ? context.id : null
   const organizationId = context?.type === 'organization' ? context.id : null
   return useChats({ spaceId, organizationId, search: params?.search, limit: params?.limit })
+}
+
+export function useInfiniteChats(params?: {
+  spaceId?: string | null
+  organizationId?: string | null
+  search?: string
+  sortBy?: 'updatedAt' | 'createdAt'
+  sortOrder?: 'asc' | 'desc'
+}) {
+  return useInfiniteQuery<PaginatedChats, Error, PaginatedChats, any, number>({
+    queryKey: ['chats', 'infinite', params],
+    queryFn: async ({ pageParam }) => {
+      return chatService.listChatsPaginated({
+        spaceId: params?.spaceId ?? null,
+        organizationId: params?.organizationId ?? null,
+        search: params?.search,
+        limit: 20,
+        offset: pageParam,
+        sortBy: params?.sortBy ?? 'updatedAt',
+        sortOrder: params?.sortOrder ?? 'desc',
+      })
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
+  })
+}
+
+export function useContextInfiniteChats(params?: {
+  search?: string
+  sortBy?: 'updatedAt' | 'createdAt'
+  sortOrder?: 'asc' | 'desc'
+}) {
+  const { context } = useAppContext()
+  const spaceId = context?.type === 'space' ? context.id : null
+  const organizationId = context?.type === 'organization' ? context.id : null
+  return useInfiniteChats({
+    spaceId,
+    organizationId,
+    search: params?.search,
+    sortBy: params?.sortBy,
+    sortOrder: params?.sortOrder,
+  })
 }

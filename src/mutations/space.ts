@@ -2,6 +2,7 @@
 
 import { type UseMutationOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { queryKeys } from '@/lib/query-keys'
 import {
   type CreateSpaceParams,
   type Space,
@@ -21,9 +22,9 @@ export function useCreateSpaceMutation(
   const merged: UseMutationOptions<CreateSpaceResult, Error, CreateSpaceParams> = {
     ...(options || {}),
     onMutate: async (newSpace) => {
-      await queryClient.cancelQueries({ queryKey: ['spaces'] })
+      await queryClient.cancelQueries({ queryKey: queryKeys.spaces.all() })
 
-      const previousSpaces = queryClient.getQueryData<Space[]>(['spaces', 'list'])
+      const previousSpaces = queryClient.getQueryData<Space[]>(queryKeys.spaces.list())
 
       if (previousSpaces) {
         const optimisticSpace: Space = {
@@ -38,19 +39,22 @@ export function useCreateSpaceMutation(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
-        queryClient.setQueryData<Space[]>(['spaces', 'list'], [...previousSpaces, optimisticSpace])
+        queryClient.setQueryData<Space[]>(queryKeys.spaces.list(), [
+          ...previousSpaces,
+          optimisticSpace,
+        ])
       }
 
       return { previousSpaces }
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['spaces'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.spaces.all() })
       toast.success('Space created successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
     onError: (error, vars, ctx: any) => {
       if (ctx?.previousSpaces) {
-        queryClient.setQueryData(['spaces', 'list'], ctx.previousSpaces)
+        queryClient.setQueryData(queryKeys.spaces.list(), ctx.previousSpaces)
       }
       toast.error(error.message || 'Failed to create space')
       options?.onError?.(error, vars, ctx)
@@ -78,11 +82,13 @@ export function useUpdateSpaceMutation(
   const merged: UseMutationOptions<UpdateSpaceResult, Error, UpdateSpaceMutationParams> = {
     ...(options || {}),
     onMutate: async ({ spaceId, updates }) => {
-      await queryClient.cancelQueries({ queryKey: ['spaces', 'by-id', spaceId] })
-      await queryClient.cancelQueries({ queryKey: ['spaces', 'list'] })
+      await queryClient.cancelQueries({ queryKey: queryKeys.spaces.byId(spaceId) })
+      await queryClient.cancelQueries({ queryKey: queryKeys.spaces.list() })
 
-      const previousSpace = queryClient.getQueryData<SpaceWithMembers>(['spaces', 'by-id', spaceId])
-      const previousSpaces = queryClient.getQueryData<Space[]>(['spaces', 'list'])
+      const previousSpace = queryClient.getQueryData<SpaceWithMembers>(
+        queryKeys.spaces.byId(spaceId),
+      )
+      const previousSpaces = queryClient.getQueryData<Space[]>(queryKeys.spaces.list())
 
       if (previousSpace) {
         const updatedSpace: SpaceWithMembers = {
@@ -90,7 +96,7 @@ export function useUpdateSpaceMutation(
           ...updates,
           updatedAt: new Date().toISOString(),
         }
-        queryClient.setQueryData(['spaces', 'by-id', spaceId], updatedSpace)
+        queryClient.setQueryData(queryKeys.spaces.byId(spaceId), updatedSpace)
       }
 
       if (previousSpaces) {
@@ -99,23 +105,23 @@ export function useUpdateSpaceMutation(
             ? { ...space, ...updates, updatedAt: new Date().toISOString() }
             : space,
         )
-        queryClient.setQueryData(['spaces', 'list'], updatedSpaces)
+        queryClient.setQueryData(queryKeys.spaces.list(), updatedSpaces)
       }
 
       return { previousSpace, previousSpaces }
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['spaces', 'by-id', vars.spaceId] })
-      void queryClient.invalidateQueries({ queryKey: ['spaces', 'list'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.spaces.byId(vars.spaceId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.spaces.list() })
       toast.success('Space updated successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
     onError: (error, vars, ctx: any) => {
       if (ctx?.previousSpace) {
-        queryClient.setQueryData(['spaces', 'by-id', vars.spaceId], ctx.previousSpace)
+        queryClient.setQueryData(queryKeys.spaces.byId(vars.spaceId), ctx.previousSpace)
       }
       if (ctx?.previousSpaces) {
-        queryClient.setQueryData(['spaces', 'list'], ctx.previousSpaces)
+        queryClient.setQueryData(queryKeys.spaces.list(), ctx.previousSpaces)
       }
       toast.error(error.message || 'Failed to update space')
       options?.onError?.(error, vars, ctx)
@@ -141,13 +147,13 @@ export function useDeleteSpaceMutation(
   const merged: UseMutationOptions<DeleteSpaceResult, Error, DeleteSpaceParams> = {
     ...(options || {}),
     onMutate: async ({ spaceId }) => {
-      await queryClient.cancelQueries({ queryKey: ['spaces'] })
+      await queryClient.cancelQueries({ queryKey: queryKeys.spaces.all() })
 
-      const previousSpaces = queryClient.getQueryData<Space[]>(['spaces', 'list'])
+      const previousSpaces = queryClient.getQueryData<Space[]>(queryKeys.spaces.list())
 
       if (previousSpaces) {
         queryClient.setQueryData<Space[]>(
-          ['spaces', 'list'],
+          queryKeys.spaces.list(),
           previousSpaces.filter((space) => space.id !== spaceId),
         )
       }
@@ -155,14 +161,14 @@ export function useDeleteSpaceMutation(
       return { previousSpaces }
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['spaces'] })
-      void queryClient.removeQueries({ queryKey: ['spaces', 'by-id', vars.spaceId] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.spaces.all() })
+      void queryClient.removeQueries({ queryKey: queryKeys.spaces.byId(vars.spaceId), exact: true })
       toast.success('Space deleted successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
     onError: (error, vars, ctx: any) => {
       if (ctx?.previousSpaces) {
-        queryClient.setQueryData(['spaces', 'list'], ctx.previousSpaces)
+        queryClient.setQueryData(queryKeys.spaces.list(), ctx.previousSpaces)
       }
       toast.error(error.message || 'Failed to delete space')
       options?.onError?.(error, vars, ctx)
@@ -191,7 +197,7 @@ export function useAddSpaceMemberMutation(
   const merged: UseMutationOptions<AddMemberResult, Error, AddMemberParams> = {
     ...(options || {}),
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['spaces', 'by-id', vars.spaceId] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.spaces.byId(vars.spaceId) })
       toast.success('Member added successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
@@ -223,7 +229,7 @@ export function useRemoveSpaceMemberMutation(
   const merged: UseMutationOptions<RemoveMemberResult, Error, RemoveMemberParams> = {
     ...(options || {}),
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['spaces', 'by-id', vars.spaceId] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.spaces.byId(vars.spaceId) })
       toast.success('Member removed successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
@@ -256,7 +262,7 @@ export function useUpdateSpaceMemberRoleMutation(
   const merged: UseMutationOptions<UpdateMemberRoleResult, Error, UpdateMemberRoleParams> = {
     ...(options || {}),
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['spaces', 'by-id', vars.spaceId] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.spaces.byId(vars.spaceId) })
       toast.success('Member role updated successfully')
       options?.onSuccess?.(data, vars, ctx)
     },

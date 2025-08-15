@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { formatDistanceToNow } from 'date-fns'
 import { Download, Edit2, FileIcon, FolderIcon, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import type { FileRecord } from '@/app/api/files/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/ui/data-table'
@@ -17,7 +18,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useDeleteFileMutation, useUpdateFileMutation } from '@/mutations/file'
-import type { FileRecord } from '@/app/api/files/utils'
 
 interface FilesDataTableProps {
   data: FileRecord[]
@@ -185,10 +185,7 @@ export function FilesDataTable({ data, onNavigateToFolder }: FilesDataTableProps
                 <Edit2 className="mr-2 h-4 w-4" />
                 Rename
               </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => deleteFile(file.id)}
-              >
+              <DropdownMenuItem variant="destructive" onClick={() => deleteFile(file.id)}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </DropdownMenuItem>

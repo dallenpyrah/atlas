@@ -4,10 +4,7 @@ import { nanoid } from 'nanoid'
 import { db } from '@/lib/db'
 import { file as fileTable } from '@/lib/db/schema/file'
 
-export async function uploadFileToBlob(
-  file: File,
-  pathname: string,
-) {
+export async function uploadFileToBlob(file: File, pathname: string) {
   const blob = await put(pathname, file, {
     access: 'public',
     addRandomSuffix: false,
@@ -85,10 +82,10 @@ export async function createFolderRecord(params: {
       userId: params.userId,
       spaceId: params.spaceId ?? null,
       organizationId: params.organizationId ?? null,
-      metadata: { 
+      metadata: {
         isFolder: true,
         parentId: params.parentId ?? null,
-        path: params.path ?? null
+        path: params.path ?? null,
       },
       uploadedAt: now,
       createdAt: now,
@@ -123,7 +120,7 @@ export async function fetchFiles(params: {
     .orderBy(desc(fileTable.updatedAt))
 
   if (params.parentId !== undefined) {
-    return files.filter(file => {
+    return files.filter((file) => {
       const metadata = file.metadata as any
       if (params.parentId === null) {
         return !metadata?.parentId
@@ -136,11 +133,7 @@ export async function fetchFiles(params: {
 }
 
 export async function fetchFileById(fileId: string) {
-  const [file] = await db
-    .select()
-    .from(fileTable)
-    .where(eq(fileTable.id, fileId))
-    .limit(1)
+  const [file] = await db.select().from(fileTable).where(eq(fileTable.id, fileId)).limit(1)
 
   return file ?? null
 }
@@ -193,7 +186,7 @@ export async function fetchFolderContents(
     userId: string
     spaceId?: string
     organizationId?: string
-  }
+  },
 ) {
   const conditions = [eq(fileTable.userId, params.userId)]
 
@@ -212,7 +205,7 @@ export async function fetchFolderContents(
     .where(and(...conditions))
     .orderBy(desc(fileTable.updatedAt))
 
-  return files.filter(file => {
+  return files.filter((file) => {
     const metadata = file.metadata as any
     return metadata?.parentId === folderId
   })

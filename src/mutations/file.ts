@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { type FileRecord } from '@/app/api/files/utils'
+import type { FileRecord } from '@/app/api/files/utils'
 
 export interface CreateFileParams {
   file: File
@@ -25,12 +25,19 @@ export interface CreateFolderParams {
   organizationId?: string
 }
 
+export interface UploadProgress {
+  totalFiles: number
+  completedFiles: number
+  failedFiles: number
+  percentage: number
+}
+
 export interface UpdateFileParams {
   id: string
   name?: string
   parentId?: string | null
   path?: string | null
-  metadata?: Record<string, any> | null
+  metadata?: Record<string, unknown> | null
 }
 
 type UploadFileContext = {
@@ -78,9 +85,32 @@ export function useUploadFileMutation(
       if (!response.ok) throw new Error('Failed to upload file')
       return response.json()
     },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ['files', 'list'] })
-      await queryClient.cancelQueries({ queryKey: ['files', 'folder-contents'] })
+    onMutate: async (params) => {
+      const listQueryKey = [
+        'files',
+        'list',
+        {
+          spaceId: params.spaceId,
+          organizationId: params.organizationId,
+          folderId: params.folderId || null,
+        },
+      ]
+      const folderQueryKey = params.folderId
+        ? [
+            'files',
+            'folder-contents',
+            params.folderId,
+            {
+              spaceId: params.spaceId,
+              organizationId: params.organizationId,
+            },
+          ]
+        : null
+
+      await queryClient.cancelQueries({ queryKey: listQueryKey, exact: true })
+      if (folderQueryKey) {
+        await queryClient.cancelQueries({ queryKey: folderQueryKey, exact: true })
+      }
 
       const previousFiles = queryClient.getQueriesData({ queryKey: ['files', 'list'] })
 
@@ -96,8 +126,43 @@ export function useUploadFileMutation(
       options?.onError?.(error, vars, context)
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['files', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['files', 'folder-contents'] })
+      const listQueryKey = [
+        'files',
+        'list',
+        {
+          spaceId: vars.spaceId,
+          organizationId: vars.organizationId,
+          folderId: vars.folderId || null,
+        },
+      ]
+      void queryClient.invalidateQueries({ queryKey: listQueryKey, exact: true })
+
+      if (vars.folderId) {
+        const folderQueryKey = [
+          'files',
+          'folder-contents',
+          vars.folderId,
+          {
+            spaceId: vars.spaceId,
+            organizationId: vars.organizationId,
+          },
+        ]
+        void queryClient.invalidateQueries({ queryKey: folderQueryKey, exact: true })
+      }
+
+      const rootListKey = [
+        'files',
+        'list',
+        {
+          spaceId: vars.spaceId,
+          organizationId: vars.organizationId,
+          folderId: null,
+        },
+      ]
+      if (!vars.folderId) {
+        void queryClient.invalidateQueries({ queryKey: rootListKey, exact: true })
+      }
+
       toast.success('File uploaded successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
@@ -105,7 +170,9 @@ export function useUploadFileMutation(
 }
 
 export function useUploadFilesMutation(
-  options?: UseMutationOptions<FileRecord[], Error, CreateFileParams[], UploadFileContext>,
+  options?: UseMutationOptions<FileRecord[], Error, CreateFileParams[], UploadFileContext> & {
+    onProgress?: (progress: UploadProgress) => void
+  },
 ) {
   const queryClient = useQueryClient()
 
@@ -131,15 +198,29 @@ export function useUploadFilesMutation(
             const result = await response.json()
             results.push(result)
           }
-        } catch (error) {
-          continue
-        }
+        } catch (error) {}
       }
       return results
     },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ['files', 'list'] })
-      await queryClient.cancelQueries({ queryKey: ['files', 'folder-contents'] })
+    onMutate: async (paramsArray) => {
+      const affectedQueries = new Set<string>()
+      paramsArray.forEach((params) => {
+        const key = JSON.stringify({
+          spaceId: params.spaceId,
+          organizationId: params.organizationId,
+          folderId: params.folderId || null,
+        })
+        affectedQueries.add(key)
+      })
+
+      const cancelPromises = Array.from(affectedQueries).map((keyStr) => {
+        const keyObj = JSON.parse(keyStr)
+        return queryClient.cancelQueries({
+          queryKey: ['files', 'list', keyObj],
+          exact: true,
+        })
+      })
+      await Promise.all(cancelPromises)
 
       const previousFiles = queryClient.getQueriesData({ queryKey: ['files', 'list'] })
 
@@ -155,8 +236,46 @@ export function useUploadFilesMutation(
       options?.onError?.(error, vars, context)
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['files', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['files', 'folder-contents'] })
+      const affectedQueries = new Map<string, unknown>()
+      vars.forEach((params) => {
+        const listKey = JSON.stringify({
+          spaceId: params.spaceId,
+          organizationId: params.organizationId,
+          folderId: params.folderId || null,
+        })
+        affectedQueries.set(listKey, {
+          spaceId: params.spaceId,
+          organizationId: params.organizationId,
+          folderId: params.folderId,
+        })
+      })
+
+      affectedQueries.forEach((params) => {
+        const listQueryKey = [
+          'files',
+          'list',
+          {
+            spaceId: params.spaceId,
+            organizationId: params.organizationId,
+            folderId: params.folderId || null,
+          },
+        ]
+        void queryClient.invalidateQueries({ queryKey: listQueryKey, exact: true })
+
+        if (params.folderId) {
+          const folderQueryKey = [
+            'files',
+            'folder-contents',
+            params.folderId,
+            {
+              spaceId: params.spaceId,
+              organizationId: params.organizationId,
+            },
+          ]
+          void queryClient.invalidateQueries({ queryKey: folderQueryKey, exact: true })
+        }
+      })
+
       toast.success(`${data.length} file(s) uploaded successfully`)
       options?.onSuccess?.(data, vars, ctx)
     },
@@ -182,9 +301,32 @@ export function useCreateFolderMutation(
       if (!response.ok) throw new Error('Failed to create folder')
       return response.json()
     },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ['files', 'list'] })
-      await queryClient.cancelQueries({ queryKey: ['files', 'folder-contents'] })
+    onMutate: async (params) => {
+      const listQueryKey = [
+        'files',
+        'list',
+        {
+          spaceId: params.spaceId,
+          organizationId: params.organizationId,
+          folderId: params.parentId || null,
+        },
+      ]
+      const parentFolderKey = params.parentId
+        ? [
+            'files',
+            'folder-contents',
+            params.parentId,
+            {
+              spaceId: params.spaceId,
+              organizationId: params.organizationId,
+            },
+          ]
+        : null
+
+      await queryClient.cancelQueries({ queryKey: listQueryKey, exact: true })
+      if (parentFolderKey) {
+        await queryClient.cancelQueries({ queryKey: parentFolderKey, exact: true })
+      }
 
       const previousFolders = queryClient.getQueriesData({ queryKey: ['files', 'list'] })
 
@@ -200,8 +342,41 @@ export function useCreateFolderMutation(
       options?.onError?.(error, vars, context)
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['files', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['files', 'folder-contents'] })
+      const listQueryKey = [
+        'files',
+        'list',
+        {
+          spaceId: vars.spaceId,
+          organizationId: vars.organizationId,
+          folderId: vars.parentId || null,
+        },
+      ]
+      void queryClient.invalidateQueries({ queryKey: listQueryKey, exact: true })
+
+      if (vars.parentId) {
+        const parentFolderKey = [
+          'files',
+          'folder-contents',
+          vars.parentId,
+          {
+            spaceId: vars.spaceId,
+            organizationId: vars.organizationId,
+          },
+        ]
+        void queryClient.invalidateQueries({ queryKey: parentFolderKey, exact: true })
+      } else {
+        const rootListKey = [
+          'files',
+          'list',
+          {
+            spaceId: vars.spaceId,
+            organizationId: vars.organizationId,
+            folderId: null,
+          },
+        ]
+        void queryClient.invalidateQueries({ queryKey: rootListKey, exact: true })
+      }
+
       toast.success('Folder created successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
@@ -228,7 +403,7 @@ export function useUpdateFileMutation(
       return response.json()
     },
     onMutate: async ({ id }) => {
-      await queryClient.cancelQueries({ queryKey: ['files', 'by-id', id] })
+      await queryClient.cancelQueries({ queryKey: ['files', 'by-id', id], exact: true })
 
       const previousFile = queryClient.getQueryData<FileRecord>(['files', 'by-id', id])
 
@@ -241,10 +416,39 @@ export function useUpdateFileMutation(
       toast.error(error.message || 'Failed to update file')
       options?.onError?.(error, vars, context)
     },
-    onSuccess: (data, vars, ctx) => {
+    onSuccess: async (data, vars, ctx) => {
       queryClient.setQueryData(['files', 'by-id', vars.id], data)
-      void queryClient.invalidateQueries({ queryKey: ['files', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['files', 'folder-contents'] })
+
+      const fileQueries = queryClient.getQueriesData<FileRecord[]>({
+        queryKey: ['files', 'list'],
+      })
+
+      fileQueries.forEach(([queryKey, queryData]) => {
+        if (queryData) {
+          const hasFile = queryData.some((file) => file.id === vars.id)
+          if (hasFile) {
+            void queryClient.invalidateQueries({ queryKey, exact: true })
+          }
+        }
+      })
+
+      if (vars.parentId !== undefined) {
+        const previousFile = ctx?.previousFile as FileRecord | undefined
+        const previousParentId = previousFile?.metadata?.parentId
+        if (previousParentId !== vars.parentId) {
+          if (previousParentId) {
+            void queryClient.invalidateQueries({
+              queryKey: ['files', 'folder-contents', previousParentId],
+            })
+          }
+          if (vars.parentId) {
+            void queryClient.invalidateQueries({
+              queryKey: ['files', 'folder-contents', vars.parentId],
+            })
+          }
+        }
+      }
+
       toast.success('File updated successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
@@ -267,8 +471,7 @@ export function useDeleteFileMutation(
       return response.json()
     },
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ['files', 'by-id', id] })
-      await queryClient.cancelQueries({ queryKey: ['files', 'list'] })
+      await queryClient.cancelQueries({ queryKey: ['files', 'by-id', id], exact: true })
 
       const previousFile = queryClient.getQueryData<FileRecord>(['files', 'by-id', id])
       const previousFiles = queryClient.getQueriesData({ queryKey: ['files', 'list'] })
@@ -288,9 +491,47 @@ export function useDeleteFileMutation(
       options?.onError?.(error, vars, context)
     },
     onSuccess: (data, vars, ctx) => {
-      void queryClient.invalidateQueries({ queryKey: ['files', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['files', 'folder-contents'] })
-      void queryClient.removeQueries({ queryKey: ['files', 'by-id', vars] })
+      const deletedFile = ctx?.previousFile
+
+      if (deletedFile) {
+        const deletedParentId = deletedFile.metadata?.parentId
+        const listQueryKey = [
+          'files',
+          'list',
+          {
+            spaceId: deletedFile.spaceId,
+            organizationId: deletedFile.organizationId,
+            folderId: deletedParentId || null,
+          },
+        ]
+        void queryClient.invalidateQueries({ queryKey: listQueryKey, exact: true })
+
+        if (deletedParentId) {
+          const folderQueryKey = [
+            'files',
+            'folder-contents',
+            deletedParentId,
+            {
+              spaceId: deletedFile.spaceId,
+              organizationId: deletedFile.organizationId,
+            },
+          ]
+          void queryClient.invalidateQueries({ queryKey: folderQueryKey, exact: true })
+        }
+
+        if (deletedFile.metadata?.isFolder) {
+          void queryClient.invalidateQueries({
+            queryKey: ['files', 'folder-contents', vars],
+          })
+
+          void queryClient.removeQueries({
+            queryKey: ['files', 'folder-contents', vars],
+            exact: false,
+          })
+        }
+      }
+
+      void queryClient.removeQueries({ queryKey: ['files', 'by-id', vars], exact: true })
       toast.success('File deleted successfully')
       options?.onSuccess?.(data, vars, ctx)
     },
@@ -327,8 +568,7 @@ export function useMoveFileMutation(
       return response.json()
     },
     onMutate: async ({ fileId }) => {
-      await queryClient.cancelQueries({ queryKey: ['files', 'by-id', fileId] })
-      await queryClient.cancelQueries({ queryKey: ['files', 'list'] })
+      await queryClient.cancelQueries({ queryKey: ['files', 'by-id', fileId], exact: true })
 
       const previousFile = queryClient.getQueryData<FileRecord>(['files', 'by-id', fileId])
       const previousFiles = queryClient.getQueriesData({ queryKey: ['files', 'list'] })
@@ -349,8 +589,59 @@ export function useMoveFileMutation(
     },
     onSuccess: (data, vars, ctx) => {
       queryClient.setQueryData(['files', 'by-id', vars.fileId], data)
-      void queryClient.invalidateQueries({ queryKey: ['files', 'list'] })
-      void queryClient.invalidateQueries({ queryKey: ['files', 'folder-contents'] })
+
+      const previousFile = ctx?.previousFile
+      if (previousFile) {
+        const previousParentId = previousFile.metadata?.parentId
+        const sourceListKey = [
+          'files',
+          'list',
+          {
+            spaceId: previousFile.spaceId,
+            organizationId: previousFile.organizationId,
+            folderId: previousParentId || null,
+          },
+        ]
+        void queryClient.invalidateQueries({ queryKey: sourceListKey, exact: true })
+
+        if (previousParentId) {
+          const sourceFolderKey = [
+            'files',
+            'folder-contents',
+            previousParentId,
+            {
+              spaceId: previousFile.spaceId,
+              organizationId: previousFile.organizationId,
+            },
+          ]
+          void queryClient.invalidateQueries({ queryKey: sourceFolderKey, exact: true })
+        }
+
+        const targetListKey = [
+          'files',
+          'list',
+          {
+            spaceId: data.spaceId,
+            organizationId: data.organizationId,
+            folderId: vars.targetFolderId,
+          },
+        ]
+        void queryClient.invalidateQueries({ queryKey: targetListKey, exact: true })
+
+        if (vars.targetFolderId) {
+          const targetFolderKey = [
+            'files',
+            'folder-contents',
+            vars.targetFolderId,
+            {
+              spaceId: data.spaceId,
+              organizationId: data.organizationId,
+            },
+          ]
+          void queryClient.invalidateQueries({ queryKey: targetFolderKey, exact: true })
+        }
+      }
+
       toast.success('File moved successfully')
       options?.onSuccess?.(data, vars, ctx)
     },

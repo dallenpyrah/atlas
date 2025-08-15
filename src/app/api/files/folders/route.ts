@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { createFolder, getFolderContents } from '../service'
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch folder contents' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create folder' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

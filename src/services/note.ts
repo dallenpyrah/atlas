@@ -23,6 +23,12 @@ type Note = {
   updatedAt: string
 }
 
+type PaginatedNotes = {
+  items: Note[]
+  hasMore: boolean
+  nextOffset?: number
+}
+
 async function handleJsonResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     try {
@@ -53,10 +59,18 @@ export const noteService = {
   async listNotes(params?: {
     spaceId?: string | null
     organizationId?: string | null
+    search?: string
+    limit?: number
+    sortBy?: 'updatedAt' | 'createdAt' | 'title'
+    sortOrder?: 'asc' | 'desc'
   }): Promise<Note[]> {
     const search = new URLSearchParams()
     if (params?.spaceId) search.set('spaceId', params.spaceId)
     if (params?.organizationId) search.set('organizationId', params.organizationId)
+    if (params?.search) search.set('search', params.search)
+    if (params?.limit) search.set('limit', params.limit.toString())
+    if (params?.sortBy) search.set('sortBy', params.sortBy)
+    if (params?.sortOrder) search.set('sortOrder', params.sortOrder)
     const query = search.toString()
     const url = query ? `/api/notes?${query}` : '/api/notes'
     const res = await fetch(url, { method: 'GET' })
@@ -102,6 +116,51 @@ export const noteService = {
     const res = await fetch(`/api/notes/search?${search.toString()}`, { method: 'GET' })
     return handleJsonResponse(res)
   },
+
+  async listNotesPaginated(params?: {
+    spaceId?: string | null
+    organizationId?: string | null
+    search?: string
+    limit?: number
+    offset?: number
+  }): Promise<PaginatedNotes> {
+    const limit = params?.limit ?? 20
+    const offset = params?.offset ?? 0
+
+    if (params?.search) {
+      const search = new URLSearchParams()
+      search.set('q', params.search)
+      if (params.spaceId) search.set('spaceId', params.spaceId)
+      if (params.organizationId) search.set('organizationId', params.organizationId)
+      search.set('limit', limit.toString())
+      search.set('offset', offset.toString())
+      const res = await fetch(`/api/notes/search?${search.toString()}`, { method: 'GET' })
+      const items = await handleJsonResponse<Note[]>(res)
+      const hasMore = items.length === limit
+      return {
+        items,
+        hasMore,
+        nextOffset: hasMore ? offset + items.length : undefined,
+      }
+    }
+
+    const search = new URLSearchParams()
+    if (params?.spaceId) search.set('spaceId', params.spaceId)
+    if (params?.organizationId) search.set('organizationId', params.organizationId)
+    search.set('limit', limit.toString())
+    search.set('offset', offset.toString())
+    const query = search.toString()
+    const url = query ? `/api/notes?${query}` : '/api/notes'
+    const res = await fetch(url, { method: 'GET' })
+    const allItems = await handleJsonResponse<Note[]>(res)
+    const items = allItems.slice(offset, offset + limit)
+    const hasMore = allItems.length > offset + limit
+    return {
+      items,
+      hasMore,
+      nextOffset: hasMore ? offset + items.length : undefined,
+    }
+  },
 }
 
-export type { CreateNoteParams, Note }
+export type { CreateNoteParams, Note, PaginatedNotes }

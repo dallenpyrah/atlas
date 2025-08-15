@@ -1,8 +1,16 @@
-export function validateChatOwnership(chat: any, userId: string): boolean {
+interface Chat {
+  userId?: string
+}
+
+interface SpaceMembership {
+  id: string
+}
+
+export function validateChatOwnership(chat: Chat | null | undefined, userId: string): boolean {
   return chat?.userId === userId
 }
 
-export function validateSpaceAccess(spaceMembership: any): boolean {
+export function validateSpaceAccess(spaceMembership: SpaceMembership | null | undefined): boolean {
   return spaceMembership !== null && spaceMembership !== undefined
 }
 

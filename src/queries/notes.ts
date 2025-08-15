@@ -1,8 +1,9 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useAppContext } from '@/components/providers/context-provider'
-import { type Note, noteService } from '@/services/note'
+import { queryKeys } from '@/lib/query-keys'
+import { type Note, noteService, type PaginatedNotes } from '@/services/note'
 
 export function useRecentNotes(
   limit: number = 5,
@@ -11,22 +12,22 @@ export function useRecentNotes(
   return useQuery<Note[]>({
     queryKey: ['notes', 'recent', { limit, params }],
     queryFn: async () => {
-      const all = await noteService.listNotes({
+      return noteService.listNotes({
         spaceId: params?.spaceId ?? null,
         organizationId: params?.organizationId ?? null,
+        limit,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
       })
-      const sorted = [...all].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      )
-      return sorted.slice(0, limit)
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
   })
 }
 
 export function useNoteById(noteId?: string) {
   return useQuery<Note | undefined>({
-    queryKey: ['notes', 'by-id', noteId],
+    queryKey: noteId ? queryKeys.notes.byId(noteId) : ['notes', 'by-id', undefined],
     queryFn: async () => {
       if (!noteId) return undefined
       return noteService.getNote(noteId)
@@ -42,9 +43,11 @@ export function useNotes(params?: {
   organizationId?: string | null
   search?: string
   limit?: number
+  sortBy?: 'updatedAt' | 'createdAt' | 'title'
+  sortOrder?: 'asc' | 'desc'
 }) {
   return useQuery<Note[]>({
-    queryKey: ['notes', 'list', params],
+    queryKey: queryKeys.notes.list(params),
     queryFn: async () => {
       if (params?.search) {
         return noteService.searchNotes({
@@ -55,14 +58,17 @@ export function useNotes(params?: {
         })
       }
 
-      const list = await noteService.listNotes({
+      return noteService.listNotes({
         spaceId: params?.spaceId ?? null,
         organizationId: params?.organizationId ?? null,
+        search: params?.search,
+        limit: params?.limit,
+        sortBy: params?.sortBy ?? 'updatedAt',
+        sortOrder: params?.sortOrder ?? 'desc',
       })
-
-      return typeof params?.limit === 'number' ? list.slice(0, params.limit) : list
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
   })
 }
 
@@ -71,4 +77,34 @@ export function useContextNotes(params?: { search?: string; limit?: number }) {
   const spaceId = context?.type === 'space' ? context.id : null
   const organizationId = context?.type === 'organization' ? context.id : null
   return useNotes({ spaceId, organizationId, search: params?.search, limit: params?.limit })
+}
+
+export function useInfiniteNotes(params?: {
+  spaceId?: string | null
+  organizationId?: string | null
+  search?: string
+}) {
+  return useInfiniteQuery<PaginatedNotes, Error, PaginatedNotes, any, number>({
+    queryKey: ['notes', 'infinite', params],
+    queryFn: async ({ pageParam }) => {
+      return noteService.listNotesPaginated({
+        spaceId: params?.spaceId ?? null,
+        organizationId: params?.organizationId ?? null,
+        search: params?.search,
+        limit: 20,
+        offset: pageParam,
+      })
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
+  })
+}
+
+export function useContextInfiniteNotes(params?: { search?: string }) {
+  const { context } = useAppContext()
+  const spaceId = context?.type === 'space' ? context.id : null
+  const organizationId = context?.type === 'organization' ? context.id : null
+  return useInfiniteNotes({ spaceId, organizationId, search: params?.search })
 }

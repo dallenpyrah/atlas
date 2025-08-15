@@ -1,14 +1,14 @@
 'use client'
 
-import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-  BreadcrumbLink,
 } from '@/components/ui/breadcrumb'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useChatById } from '@/queries/chats'
 
 export function ChatBreadcrumb({ chatId }: { chatId: string }) {
@@ -32,4 +32,3 @@ export function ChatBreadcrumb({ chatId }: { chatId: string }) {
     </header>
   )
 }
-
