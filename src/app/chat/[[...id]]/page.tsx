@@ -2,15 +2,10 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { v4 as uuidv4 } from 'uuid'
 import { AppSidebar } from '@/components/app-sidebar'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '@/components/ui/breadcrumb'
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { auth } from '@/lib/auth'
 import { Chat } from '../chat'
+import { ChatBreadcrumb } from '../chat-breadcrumb'
 
 type ChatPageParams = Promise<{
   id?: string[]
@@ -33,16 +28,7 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbPage>Chat</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </header>
+        <ChatBreadcrumb chatId={chatId} />
         <Chat chatId={chatId} userId={session.user.id} isNewChat={isNewChat} />
       </SidebarInset>
     </SidebarProvider>

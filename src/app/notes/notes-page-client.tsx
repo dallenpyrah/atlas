@@ -2,13 +2,15 @@
 
 import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useAppContext } from '@/components/providers/context-provider'
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
+  BreadcrumbLink,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -21,9 +23,6 @@ interface NotesPageClientProps {
 }
 
 export function NotesPageClient({ noteId }: NotesPageClientProps) {
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [titleValue, setTitleValue] = useState('')
-  const titleRef = useRef<HTMLHeadingElement>(null)
 
   const router = useRouter()
   const { context } = useAppContext()
@@ -42,30 +41,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
   }, [noteId, recentNotes, router])
 
   const displayTitle = note?.title ?? 'Untitled'
-
-  useEffect(() => {
-    if (note && titleRef.current && !isEditingTitle) {
-      titleRef.current.textContent = note.title ?? 'Untitled'
-      setTitleValue(note.title ?? 'Untitled')
-    }
-  }, [note?.title, note?.id, isEditingTitle])
-
-  const handleTitleSubmit = useCallback(async () => {
-    if (!noteId || !note || titleValue.trim() === note.title) {
-      setIsEditingTitle(false)
-      return
-    }
-
-    try {
-      await updateNote({
-        noteId,
-        updates: { title: titleValue.trim() || 'Untitled' },
-      })
-      setIsEditingTitle(false)
-    } catch (error) {
-      console.error('Failed to update title:', error)
-    }
-  }, [titleValue, note, noteId, updateNote])
 
   const handleCreateNote = useCallback(async () => {
     try {
@@ -141,59 +116,14 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>Notes</BreadcrumbPage>
+                <BreadcrumbLink className="cursor-default pointer-events-none">Notes</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{displayTitle}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-        </div>
-        <div className="flex items-center">
-          <h1
-            ref={titleRef}
-            className="text-lg font-semibold text-foreground cursor-text hover:bg-muted/50 px-2 py-1 rounded outline-none"
-            contentEditable={isEditingTitle}
-            suppressContentEditableWarning
-            onBlur={async (e) => {
-              setIsEditingTitle(false)
-              const newTitle = e.currentTarget.textContent?.trim() || 'Untitled'
-              if (newTitle !== note?.title && noteId) {
-                try {
-                  await updateNote({
-                    noteId,
-                    updates: { title: newTitle },
-                  })
-                } catch (error) {
-                  console.error('Failed to update title:', error)
-                  if (titleRef.current && note) {
-                    titleRef.current.textContent = note.title || 'Untitled'
-                  }
-                }
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                e.currentTarget.blur()
-              } else if (e.key === 'Escape') {
-                e.currentTarget.textContent = note?.title || 'Untitled'
-                e.currentTarget.blur()
-              }
-            }}
-            onClick={(e) => {
-              if (!isEditingTitle && noteId && note) {
-                const element = e.currentTarget
-                setIsEditingTitle(true)
-                setTimeout(() => {
-                  const selection = window.getSelection()
-                  const range = document.createRange()
-                  range.selectNodeContents(element)
-                  selection?.removeAllRanges()
-                  selection?.addRange(range)
-                }, 0)
-              }
-            }}
-          >
-            {displayTitle}
-          </h1>
         </div>
       </header>
       <NotesClient noteId={noteId} />
