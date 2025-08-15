@@ -1,13 +1,11 @@
 'use client'
 
+import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus } from 'lucide-react'
 import { useAppContext } from '@/components/providers/context-provider'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { cn } from '@/lib/utils'
 import { useCreateNoteMutation, useUpdateNoteMutation } from '@/mutations/note'
 import { useNoteById, useRecentNotes } from '@/queries/notes'
 import { NotesClient } from './notes-client'
@@ -41,7 +39,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
 
   useEffect(() => {
     if (note && titleRef.current && !isEditingTitle) {
-      // keep local title in sync when switching notes or after updates
       titleRef.current.textContent = note.title ?? 'Untitled'
       setTitleValue(note.title ?? 'Untitled')
     }
@@ -63,26 +60,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
       console.error('Failed to update title:', error)
     }
   }, [titleValue, note, noteId, updateNote])
-
-  const handleTitleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        handleTitleSubmit()
-      } else if (e.key === 'Escape') {
-        setTitleValue(note?.title || 'Untitled')
-        setIsEditingTitle(false)
-      }
-    },
-    [handleTitleSubmit, note],
-  )
-
-  const handleTitleClick = useCallback(() => {
-    if (noteId && note) {
-      setTitleValue(note.title)
-      setIsEditingTitle(true)
-    }
-  }, [noteId, note])
 
   const handleCreateNote = useCallback(async () => {
     try {
@@ -111,12 +88,7 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
               <p className="text-lg mb-2">You don't have any notes yet</p>
               <p className="text-sm">Create your first note to get started</p>
             </div>
-            <Button
-              onClick={handleCreateNote}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
+            <Button onClick={handleCreateNote} variant="outline" size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
               New note
             </Button>
@@ -163,7 +135,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
                   })
                 } catch (error) {
                   console.error('Failed to update title:', error)
-                  // Revert on error
                   if (titleRef.current && note) {
                     titleRef.current.textContent = note.title || 'Untitled'
                   }
