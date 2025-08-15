@@ -4,6 +4,12 @@ import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppContext } from '@/components/providers/context-provider'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useCreateNoteMutation, useUpdateNoteMutation } from '@/mutations/note'
@@ -78,8 +84,15 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
     return (
       <>
         <header className="flex h-16 shrink-0 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Notes</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </header>
         <div className="flex items-center justify-center h-full">
@@ -102,9 +115,15 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
     return (
       <>
         <header className="flex h-16 shrink-0 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
-            <h1 className="text-lg font-semibold text-muted-foreground">Loading...</h1>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Notes</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </header>
         <div className="flex items-center justify-center h-full">
@@ -117,11 +136,20 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between px-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Notes</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        <div className="flex items-center">
           <h1
             ref={titleRef}
-            className="flex-1 text-lg font-semibold text-foreground cursor-text hover:bg-muted/50 px-2 py-1 rounded -ml-2 outline-none"
+            className="text-lg font-semibold text-foreground cursor-text hover:bg-muted/50 px-2 py-1 rounded outline-none"
             contentEditable={isEditingTitle}
             suppressContentEditableWarning
             onBlur={async (e) => {
@@ -167,7 +195,6 @@ export function NotesPageClient({ noteId }: NotesPageClientProps) {
             {displayTitle}
           </h1>
         </div>
-        <div className="flex items-center" />
       </header>
       <NotesClient noteId={noteId} />
     </>
