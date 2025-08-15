@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { auth } from '@/lib/auth'
-import { Chat } from '../Chat'
+import { Chat } from '../chat'
 
 type ChatPageParams = Promise<{
   id?: string[]
