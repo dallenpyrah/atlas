@@ -48,6 +48,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
 } from '@/components/ui/sidebar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useDeleteChatMutation } from '@/mutations/chat'
 import { useCreateNoteMutation, useDeleteNoteMutation } from '@/mutations/note'
 import { useChats, useRecentChats } from '@/queries/chats'
@@ -107,25 +108,32 @@ function ChatActionsMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Open chat actions"
-          title="More actions"
-          className={`group size-7 p-0 text-muted-foreground hover:text-foreground rounded-sm ${className ?? ''}`}
-          onMouseDown={(e) => {
-            if (isInCommandItem) {
-              e.preventDefault()
-            }
-          }}
-          onClick={(e) => {
-            e.stopPropagation()
-          }}
-        >
-          <MoreHorizontal className="size-4 transition-colors group-hover:text-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open chat actions"
+              title="More actions"
+              className={`group size-7 p-0 text-muted-foreground hover:text-foreground rounded-sm ${className ?? ''}`}
+              onMouseDown={(e) => {
+                if (isInCommandItem) {
+                  e.preventDefault()
+                }
+              }}
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+            >
+              <MoreHorizontal className="size-4 transition-colors group-hover:text-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" align="end">
+          Actions
+        </TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end" side={isInCommandItem ? 'right' : 'right'} className="w-40">
         <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
           Actions
@@ -140,7 +148,7 @@ function ChatActionsMenu({
             onEditClick?.()
           }}
         >
-          <Edit2 className="size-4 mr-2" />
+          <Edit2 className="size-4" />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -182,25 +190,32 @@ function NoteActionsMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Open note actions"
-          title="More actions"
-          className={`group size-7 p-0 text-muted-foreground hover:text-foreground rounded-sm ${className ?? ''}`}
-          onMouseDown={(e) => {
-            if (isInCommandItem) {
-              e.preventDefault()
-            }
-          }}
-          onClick={(e) => {
-            e.stopPropagation()
-          }}
-        >
-          <MoreHorizontal className="size-4 transition-colors group-hover:text-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open note actions"
+              title="More actions"
+              className={`group size-7 p-0 text-muted-foreground hover:text-foreground rounded-sm ${className ?? ''}`}
+              onMouseDown={(e) => {
+                if (isInCommandItem) {
+                  e.preventDefault()
+                }
+              }}
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+            >
+              <MoreHorizontal className="size-4 transition-colors group-hover:text-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" align="end">
+          Actions
+        </TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end" side={isInCommandItem ? 'right' : 'right'} className="w-40">
         <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
           Actions
@@ -215,7 +230,7 @@ function NoteActionsMenu({
             onEditClick?.()
           }}
         >
-          <Edit2 className="size-4 mr-2" />
+          <Edit2 className="size-4" />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -380,17 +395,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <span className="sr-only">Toggle</span>
                     </SidebarMenuAction>
                   </CollapsibleTrigger>
-                  <SidebarMenuAction asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7 p-0"
-                      onClick={handleNewNoteClick}
-                      title="Create new note"
-                    >
-                      <Plus className="size-4" />
-                      <span className="sr-only">Create new note</span>
-                    </Button>
+                  <SidebarMenuAction className="right-6" asChild>
+                    <span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 p-0"
+                            onClick={handleNewNoteClick}
+                            aria-label="New note"
+                          >
+                            <Plus className="size-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" align="end">
+                          New note
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
                   </SidebarMenuAction>
                   <CollapsibleContent>
                     <SidebarMenuSub>

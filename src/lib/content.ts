@@ -36,4 +36,4 @@ export const content = `
   <pre><code class="language-javascript">// Example code block
 const greeting = "Hello, World!";
 console.log(greeting);</code></pre>
-`;
+`

@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useNoteById } from '@/queries/notes'
+import { useMemo, useRef } from 'react'
 import { RichTextEditorDemo } from '@/components/tiptap/rich-text-editor'
 import { useUpdateNoteMutation } from '@/mutations/note'
-import { useEffect, useMemo, useRef } from 'react'
+import { useNoteById } from '@/queries/notes'
 
 interface NotesClientProps {
   noteId?: string

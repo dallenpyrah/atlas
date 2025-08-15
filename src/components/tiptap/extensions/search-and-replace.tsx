@@ -1,62 +1,58 @@
-import { type Editor as CoreEditor, Extension, type Range } from "@tiptap/core";
-import type { Node as PMNode } from "@tiptap/pm/model";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
+import { type Editor as CoreEditor, Extension, type Range } from '@tiptap/core'
+import type { Node as PMNode } from '@tiptap/pm/model'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 
-declare module "@tiptap/core" {
+declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     search: {
       /**
        * @description Set search term in extension.
        */
-      setSearchTerm: (searchTerm: string) => ReturnType;
+      setSearchTerm: (searchTerm: string) => ReturnType
       /**
        * @description Set replace term in extension.
        */
-      setReplaceTerm: (replaceTerm: string) => ReturnType;
+      setReplaceTerm: (replaceTerm: string) => ReturnType
       /**
        * @description Replace first instance of search result with given replace term.
        */
-      replace: () => ReturnType;
+      replace: () => ReturnType
       /**
        * @description Replace all instances of search result with given replace term.
        */
-      replaceAll: () => ReturnType;
+      replaceAll: () => ReturnType
       /**
        * @description Select the next search result.
        */
-      selectNextResult: () => ReturnType;
+      selectNextResult: () => ReturnType
       /**
        * @description Select the previous search result.
        */
-      selectPreviousResult: () => ReturnType;
+      selectPreviousResult: () => ReturnType
       /**
        * @description Set case sensitivity in extension.
        */
-      setCaseSensitive: (caseSensitive: boolean) => ReturnType;
-    };
+      setCaseSensitive: (caseSensitive: boolean) => ReturnType
+    }
   }
 }
 
 interface TextNodeWithPosition {
-  text: string;
-  pos: number;
+  text: string
+  pos: number
 }
 
-const getRegex = (
-  searchString: string,
-  disableRegex: boolean,
-  caseSensitive: boolean
-): RegExp => {
+const getRegex = (searchString: string, disableRegex: boolean, caseSensitive: boolean): RegExp => {
   const escapedString = disableRegex
-    ? searchString.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
-    : searchString;
-  return new RegExp(escapedString, caseSensitive ? "gu" : "gui");
-};
+    ? searchString.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+    : searchString
+  return new RegExp(escapedString, caseSensitive ? 'gu' : 'gui')
+}
 
 interface ProcessedSearches {
-  decorationsToReturn: DecorationSet;
-  results: Range[];
+  decorationsToReturn: DecorationSet
+  results: Range[]
 }
 
 function processSearches(
@@ -64,236 +60,223 @@ function processSearches(
   searchTerm: RegExp,
   selectedResultIndex: number,
   searchResultClass: string,
-  selectedResultClass: string
+  selectedResultClass: string,
 ): ProcessedSearches {
-  const decorations: Decoration[] = [];
-  const results: Range[] = [];
-  const textNodesWithPosition: TextNodeWithPosition[] = [];
+  const decorations: Decoration[] = []
+  const results: Range[] = []
+  const textNodesWithPosition: TextNodeWithPosition[] = []
 
   if (!searchTerm) {
-    return { decorationsToReturn: DecorationSet.empty, results: [] };
+    return { decorationsToReturn: DecorationSet.empty, results: [] }
   }
 
   doc.descendants((node, pos) => {
     if (node.isText) {
-      textNodesWithPosition.push({ text: node.text || "", pos });
+      textNodesWithPosition.push({ text: node.text || '', pos })
     }
-  });
+  })
 
   for (const { text, pos } of textNodesWithPosition) {
-    const matches = Array.from(text.matchAll(searchTerm)).filter(
-      ([matchText]) => matchText.trim()
-    );
+    const matches = Array.from(text.matchAll(searchTerm)).filter(([matchText]) => matchText.trim())
 
     for (const match of matches) {
       if (match.index !== undefined) {
         results.push({
           from: pos + match.index,
           to: pos + match.index + match[0].length,
-        });
+        })
       }
     }
   }
 
   for (let i = 0; i < results.length; i++) {
-    const result = results[i];
-    if (!result) continue;
-    const { from, to } = result;
+    const result = results[i]
+    if (!result) continue
+    const { from, to } = result
     decorations.push(
       Decoration.inline(from, to, {
-        class:
-          selectedResultIndex === i ? selectedResultClass : searchResultClass,
-      })
-    );
+        class: selectedResultIndex === i ? selectedResultClass : searchResultClass,
+      }),
+    )
   }
 
   return {
     decorationsToReturn: DecorationSet.create(doc, decorations),
     results,
-  };
+  }
 }
 
-const replace = (
-  replaceTerm: string,
-  results: Range[],
-  { state, dispatch }: any
-) => {
-  const firstResult = results[0];
+const replace = (replaceTerm: string, results: Range[], { state, dispatch }: any) => {
+  const firstResult = results[0]
 
   if (!firstResult) {
-    return;
+    return
   }
 
-  const { from, to } = firstResult;
+  const { from, to } = firstResult
 
   if (dispatch) {
-    dispatch(state.tr.insertText(replaceTerm, from, to));
+    dispatch(state.tr.insertText(replaceTerm, from, to))
   }
-};
+}
 
 const rebaseNextResult = (
   replaceTerm: string,
   index: number,
   lastOffset: number,
-  results: Range[]
+  results: Range[],
 ): [number, Range[]] | null => {
-  const nextIndex = index + 1;
+  const nextIndex = index + 1
 
   if (!results[nextIndex]) {
-    return null;
+    return null
   }
 
-  const currentResult = results[index];
+  const currentResult = results[index]
   if (!currentResult) {
-    return null;
+    return null
   }
 
-  const { from: currentFrom, to: currentTo } = currentResult;
+  const { from: currentFrom, to: currentTo } = currentResult
 
-  const offset = currentTo - currentFrom - replaceTerm.length + lastOffset;
+  const offset = currentTo - currentFrom - replaceTerm.length + lastOffset
 
-  const { from, to } = results[nextIndex];
+  const { from, to } = results[nextIndex]
 
   results[nextIndex] = {
     to: to - offset,
     from: from - offset,
-  };
+  }
 
-  return [offset, results];
-};
+  return [offset, results]
+}
 
 const replaceAll = (
   replaceTerm: string,
   results: Range[],
-  { tr, dispatch }: { tr: any; dispatch: any }
+  { tr, dispatch }: { tr: any; dispatch: any },
 ) => {
   if (!results.length) {
-    return;
+    return
   }
 
-  let offset = 0;
+  let offset = 0
 
   for (let i = 0; i < results.length; i++) {
-    const result = results[i];
-    if (!result) continue;
-    const { from, to } = result;
-    tr.insertText(replaceTerm, from, to);
-    const rebaseResponse = rebaseNextResult(replaceTerm, i, offset, results);
+    const result = results[i]
+    if (!result) continue
+    const { from, to } = result
+    tr.insertText(replaceTerm, from, to)
+    const rebaseResponse = rebaseNextResult(replaceTerm, i, offset, results)
 
     if (rebaseResponse) {
-      offset = rebaseResponse[0];
+      offset = rebaseResponse[0]
     }
   }
 
-  dispatch(tr);
-};
+  dispatch(tr)
+}
 
 const selectNext = (editor: CoreEditor) => {
-  const { results } = editor.storage
-    .searchAndReplace as SearchAndReplaceStorage;
+  const { results } = editor.storage.searchAndReplace as SearchAndReplaceStorage
 
   if (!results.length) {
-    return;
+    return
   }
 
-  const { selectedResult } = editor.storage.searchAndReplace;
+  const { selectedResult } = editor.storage.searchAndReplace
 
   if (selectedResult >= results.length - 1) {
-    editor.storage.searchAndReplace.selectedResult = 0;
+    editor.storage.searchAndReplace.selectedResult = 0
   } else {
-    editor.storage.searchAndReplace.selectedResult += 1;
+    editor.storage.searchAndReplace.selectedResult += 1
   }
 
-  const result = results[editor.storage.searchAndReplace.selectedResult];
-  if (!result) return;
+  const result = results[editor.storage.searchAndReplace.selectedResult]
+  if (!result) return
 
-  const { from } = result;
+  const { from } = result
 
-  const view: EditorView | undefined = editor.view;
+  const view: EditorView | undefined = editor.view
 
   if (view) {
     view
       .domAtPos(from)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      .node.scrollIntoView({ behavior: "smooth", block: "center" });
+      .node.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
-};
+}
 
 const selectPrevious = (editor: CoreEditor) => {
-  const { results } = editor.storage.searchAndReplace;
+  const { results } = editor.storage.searchAndReplace
 
   if (!results.length) {
-    return;
+    return
   }
 
-  const { selectedResult } = editor.storage.searchAndReplace;
+  const { selectedResult } = editor.storage.searchAndReplace
 
   if (selectedResult <= 0) {
-    editor.storage.searchAndReplace.selectedResult = results.length - 1;
+    editor.storage.searchAndReplace.selectedResult = results.length - 1
   } else {
-    editor.storage.searchAndReplace.selectedResult -= 1;
+    editor.storage.searchAndReplace.selectedResult -= 1
   }
 
-  const { from } = results[editor.storage.searchAndReplace.selectedResult];
+  const { from } = results[editor.storage.searchAndReplace.selectedResult]
 
-  const view: EditorView | undefined = editor.view;
+  const view: EditorView | undefined = editor.view
 
   if (view) {
     view
       .domAtPos(from)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      .node.scrollIntoView({ behavior: "smooth", block: "center" });
+      .node.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
-};
+}
 
-export const searchAndReplacePluginKey = new PluginKey(
-  "searchAndReplacePlugin"
-);
+export const searchAndReplacePluginKey = new PluginKey('searchAndReplacePlugin')
 
 export interface SearchAndReplaceOptions {
-  searchResultClass: string;
-  selectedResultClass: string;
-  disableRegex: boolean;
+  searchResultClass: string
+  selectedResultClass: string
+  disableRegex: boolean
 }
 
 export interface SearchAndReplaceStorage {
-  searchTerm: string;
-  replaceTerm: string;
-  results: Range[];
-  lastSearchTerm: string;
-  selectedResult: number;
-  lastSelectedResult: number;
-  caseSensitive: boolean;
-  lastCaseSensitiveState: boolean;
+  searchTerm: string
+  replaceTerm: string
+  results: Range[]
+  lastSearchTerm: string
+  selectedResult: number
+  lastSelectedResult: number
+  caseSensitive: boolean
+  lastCaseSensitiveState: boolean
 }
 
-export const SearchAndReplace = Extension.create<
-  SearchAndReplaceOptions,
-  SearchAndReplaceStorage
->({
-  name: "searchAndReplace",
+export const SearchAndReplace = Extension.create<SearchAndReplaceOptions, SearchAndReplaceStorage>({
+  name: 'searchAndReplace',
 
   addOptions() {
     return {
-      searchResultClass: " bg-yellow-200",
-      selectedResultClass: "bg-yellow-500",
+      searchResultClass: ' bg-yellow-200',
+      selectedResultClass: 'bg-yellow-500',
       disableRegex: true,
-    };
+    }
   },
 
   addStorage() {
     return {
-      searchTerm: "",
-      replaceTerm: "",
+      searchTerm: '',
+      replaceTerm: '',
       results: [],
-      lastSearchTerm: "",
+      lastSearchTerm: '',
       selectedResult: 0,
       lastSelectedResult: 0,
       caseSensitive: false,
       lastCaseSensitiveState: false,
-    };
+    }
   },
 
   addCommands() {
@@ -301,75 +284,74 @@ export const SearchAndReplace = Extension.create<
       setSearchTerm:
         (searchTerm: string) =>
         ({ editor }) => {
-          editor.storage.searchAndReplace.searchTerm = searchTerm;
+          editor.storage.searchAndReplace.searchTerm = searchTerm
 
-          return false;
+          return false
         },
       setReplaceTerm:
         (replaceTerm: string) =>
         ({ editor }) => {
-          editor.storage.searchAndReplace.replaceTerm = replaceTerm;
+          editor.storage.searchAndReplace.replaceTerm = replaceTerm
 
-          return false;
+          return false
         },
       replace:
         () =>
         ({ editor, state, dispatch }) => {
-          const { replaceTerm, results } = editor.storage.searchAndReplace;
+          const { replaceTerm, results } = editor.storage.searchAndReplace
 
-          replace(replaceTerm, results, { state, dispatch });
+          replace(replaceTerm, results, { state, dispatch })
 
-          return false;
+          return false
         },
       replaceAll:
         () =>
         ({ editor, tr, dispatch }) => {
-          const { replaceTerm, results } = editor.storage.searchAndReplace;
+          const { replaceTerm, results } = editor.storage.searchAndReplace
 
-          replaceAll(replaceTerm, results, { tr, dispatch });
+          replaceAll(replaceTerm, results, { tr, dispatch })
 
-          return false;
+          return false
         },
       selectNextResult:
         () =>
         ({ editor }) => {
-          selectNext(editor);
+          selectNext(editor)
 
-          return false;
+          return false
         },
       selectPreviousResult:
         () =>
         ({ editor }) => {
-          selectPrevious(editor);
+          selectPrevious(editor)
 
-          return false;
+          return false
         },
       setCaseSensitive:
         (caseSensitive: boolean) =>
         ({ editor }) => {
-          editor.storage.searchAndReplace.caseSensitive = caseSensitive;
+          editor.storage.searchAndReplace.caseSensitive = caseSensitive
 
-          return false;
+          return false
         },
-    };
+    }
   },
 
   addProseMirrorPlugins() {
-    const editor = this.editor;
-    const { searchResultClass, selectedResultClass, disableRegex } =
-      this.options;
+    const editor = this.editor
+    const { searchResultClass, selectedResultClass, disableRegex } = this.options
 
     const setLastSearchTerm = (t: string) => {
-      editor.storage.searchAndReplace.lastSearchTerm = t;
-    };
+      editor.storage.searchAndReplace.lastSearchTerm = t
+    }
 
     const setLastSelectedResult = (r: number) => {
-      editor.storage.searchAndReplace.lastSelectedResult = r;
-    };
+      editor.storage.searchAndReplace.lastSelectedResult = r
+    }
 
     const setLastCaseSensitiveState = (s: boolean) => {
-      editor.storage.searchAndReplace.lastCaseSensitiveState = s;
-    };
+      editor.storage.searchAndReplace.lastCaseSensitiveState = s
+    }
 
     return [
       new Plugin({
@@ -384,7 +366,7 @@ export const SearchAndReplace = Extension.create<
               lastSelectedResult,
               caseSensitive,
               lastCaseSensitiveState,
-            } = editor.storage.searchAndReplace as SearchAndReplaceStorage;
+            } = editor.storage.searchAndReplace as SearchAndReplaceStorage
 
             if (
               !docChanged &&
@@ -392,17 +374,17 @@ export const SearchAndReplace = Extension.create<
               selectedResult === lastSelectedResult &&
               lastCaseSensitiveState === caseSensitive
             ) {
-              return oldState;
+              return oldState
             }
 
-            setLastSearchTerm(searchTerm);
-            setLastSelectedResult(selectedResult);
-            setLastCaseSensitiveState(caseSensitive);
+            setLastSearchTerm(searchTerm)
+            setLastSelectedResult(selectedResult)
+            setLastCaseSensitiveState(caseSensitive)
 
             if (!searchTerm) {
-              editor.storage.searchAndReplace.selectedResult = 0;
-              editor.storage.searchAndReplace.results = [];
-              return DecorationSet.empty;
+              editor.storage.searchAndReplace.selectedResult = 0
+              editor.storage.searchAndReplace.results = []
+              return DecorationSet.empty
             }
 
             const { decorationsToReturn, results } = processSearches(
@@ -410,27 +392,27 @@ export const SearchAndReplace = Extension.create<
               getRegex(searchTerm, disableRegex, caseSensitive),
               selectedResult,
               searchResultClass,
-              selectedResultClass
-            );
+              selectedResultClass,
+            )
 
-            editor.storage.searchAndReplace.results = results;
+            editor.storage.searchAndReplace.results = results
 
             if (selectedResult > results.length) {
-              editor.storage.searchAndReplace.selectedResult = 1;
-              editor.commands.selectPreviousResult();
+              editor.storage.searchAndReplace.selectedResult = 1
+              editor.commands.selectPreviousResult()
             }
 
-            return decorationsToReturn;
+            return decorationsToReturn
           },
         },
         props: {
           decorations(state) {
-            return this.getState(state);
+            return this.getState(state)
           },
         },
       }),
-    ];
+    ]
   },
-});
+})
 
-export default SearchAndReplace;
+export default SearchAndReplace

@@ -1,6 +1,5 @@
 'use client'
 
-import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CommandItem } from '@/components/ui/command'
@@ -21,7 +20,6 @@ interface CommandNoteItemProps {
 export function CommandNoteItem({ note, onClose, NoteActionsMenu }: CommandNoteItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const updateNoteMutation = useUpdateNoteMutation()
-  const queryClient = useQueryClient()
   const router = useRouter()
 
   const title = note.title ?? 'Untitled'
@@ -32,7 +30,6 @@ export function CommandNoteItem({ note, onClose, NoteActionsMenu }: CommandNoteI
       noteId: note.id,
       updates: { title: newTitle },
     })
-    await queryClient.invalidateQueries({ queryKey: ['notes'] })
   }
 
   return (

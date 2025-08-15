@@ -1,186 +1,184 @@
-"use client";
+'use client'
 
+import type { Editor } from '@tiptap/core'
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  ChevronRight,
+  Code2,
+  CodeSquare,
   Heading1,
   Heading2,
   Heading3,
-  ListOrdered,
+  ImageIcon,
   List,
-  Code2,
-  ChevronRight,
-  Quote, ImageIcon,
-  Minus, AlignLeft,
-  AlignCenter,
-  AlignRight,
-  CodeSquare,
-  TextQuote
-} from "lucide-react";
+  ListOrdered,
+  Minus,
+  Quote,
+  TextQuote,
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // TipTap v3 does not export FloatingMenu; this component relies on tippy directly via our logic.
 // Safeguard import type only to avoid compile error
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { createPortal } from "react-dom";
+import { createPortal } from 'react-dom'
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import type { Editor } from "@tiptap/core";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useDebounce } from "@/hooks/use-debounce";
+} from '@/components/ui/command'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { useDebounce } from '@/hooks/use-debounce'
+import { cn } from '@/lib/utils'
 
 interface CommandItemType {
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  keywords: string;
-  command: (editor: Editor) => void;
-  group: string;
+  title: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
+  keywords: string
+  command: (editor: Editor) => void
+  group: string
 }
 
 type CommandGroupType = {
-  group: string;
-  items: Omit<CommandItemType, "group">[];
-};
+  group: string
+  items: Omit<CommandItemType, 'group'>[]
+}
 
 const groups: CommandGroupType[] = [
   {
-    group: "Basic blocks",
+    group: 'Basic blocks',
     items: [
       {
-        title: "Text",
-        description: "Just start writing with plain text",
+        title: 'Text',
+        description: 'Just start writing with plain text',
         icon: ChevronRight,
-        keywords: "paragraph text",
+        keywords: 'paragraph text',
         command: (editor) => editor.chain().focus().clearNodes().run(),
       },
       {
-        title: "Heading 1",
-        description: "Large section heading",
+        title: 'Heading 1',
+        description: 'Large section heading',
         icon: Heading1,
-        keywords: "h1 title header",
-        command: (editor) =>
-          editor.chain().focus().toggleHeading({ level: 1 }).run(),
+        keywords: 'h1 title header',
+        command: (editor) => editor.chain().focus().toggleHeading({ level: 1 }).run(),
       },
       {
-        title: "Heading 2",
-        description: "Medium section heading",
+        title: 'Heading 2',
+        description: 'Medium section heading',
         icon: Heading2,
-        keywords: "h2 subtitle",
-        command: (editor) =>
-          editor.chain().focus().toggleHeading({ level: 2 }).run(),
+        keywords: 'h2 subtitle',
+        command: (editor) => editor.chain().focus().toggleHeading({ level: 2 }).run(),
       },
       {
-        title: "Heading 3",
-        description: "Small section heading",
+        title: 'Heading 3',
+        description: 'Small section heading',
         icon: Heading3,
-        keywords: "h3 subheader",
-        command: (editor) =>
-          editor.chain().focus().toggleHeading({ level: 3 }).run(),
+        keywords: 'h3 subheader',
+        command: (editor) => editor.chain().focus().toggleHeading({ level: 3 }).run(),
       },
       {
-        title: "Bullet List",
-        description: "Create a simple bullet list",
+        title: 'Bullet List',
+        description: 'Create a simple bullet list',
         icon: List,
-        keywords: "unordered ul bullets",
+        keywords: 'unordered ul bullets',
         command: (editor) => editor.chain().focus().toggleBulletList().run(),
       },
       {
-        title: "Numbered List",
-        description: "Create a ordered list",
+        title: 'Numbered List',
+        description: 'Create a ordered list',
         icon: ListOrdered,
-        keywords: "numbered ol",
+        keywords: 'numbered ol',
         command: (editor) => editor.chain().focus().toggleOrderedList().run(),
       },
       {
-        title: "Code Block",
-        description: "Capture code snippets",
+        title: 'Code Block',
+        description: 'Capture code snippets',
         icon: Code2,
-        keywords: "code snippet pre",
+        keywords: 'code snippet pre',
         command: (editor) => editor.chain().focus().toggleCodeBlock().run(),
       },
       {
-        title: "Image",
-        description: "Insert an image",
+        title: 'Image',
+        description: 'Insert an image',
         icon: ImageIcon,
-        keywords: "image picture photo",
+        keywords: 'image picture photo',
         command: (editor) => editor.chain().focus().insertImagePlaceholder().run(),
       },
       {
-        title: "Horizontal Rule",
-        description: "Add a horizontal divider",
+        title: 'Horizontal Rule',
+        description: 'Add a horizontal divider',
         icon: Minus,
-        keywords: "horizontal rule divider",
+        keywords: 'horizontal rule divider',
         command: (editor) => editor.chain().focus().setHorizontalRule().run(),
       },
     ],
   },
   {
-    group: "Inline",
+    group: 'Inline',
     items: [
       {
-        title: "Quote",
-        description: "Capture a quotation",
+        title: 'Quote',
+        description: 'Capture a quotation',
         icon: Quote,
-        keywords: "blockquote cite",
+        keywords: 'blockquote cite',
         command: (editor) => editor.chain().focus().toggleBlockquote().run(),
       },
       {
-        title: "Code",
-        description: "Inline code snippet",
+        title: 'Code',
+        description: 'Inline code snippet',
         icon: CodeSquare,
-        keywords: "code inline",
+        keywords: 'code inline',
         command: (editor) => editor.chain().focus().toggleCode().run(),
       },
       {
-        title: "Blockquote",
-        description: "Block quote",
+        title: 'Blockquote',
+        description: 'Block quote',
         icon: TextQuote,
-        keywords: "blockquote quote",
+        keywords: 'blockquote quote',
         command: (editor) => editor.chain().focus().toggleBlockquote().run(),
       },
     ],
   },
   {
-    group: "Alignment",
+    group: 'Alignment',
     items: [
       {
-        title: "Align Left",
-        description: "Align text to the left",
+        title: 'Align Left',
+        description: 'Align text to the left',
         icon: AlignLeft,
-        keywords: "align left",
-        command: (editor) => editor.chain().focus().setTextAlign("left").run(),
+        keywords: 'align left',
+        command: (editor) => editor.chain().focus().setTextAlign('left').run(),
       },
       {
-        title: "Align Center",
-        description: "Center align text",
+        title: 'Align Center',
+        description: 'Center align text',
         icon: AlignCenter,
-        keywords: "align center",
-        command: (editor) =>
-          editor.chain().focus().setTextAlign("center").run(),
+        keywords: 'align center',
+        command: (editor) => editor.chain().focus().setTextAlign('center').run(),
       },
       {
-        title: "Align Right",
-        description: "Align text to the right",
+        title: 'Align Right',
+        description: 'Align text to the right',
         icon: AlignRight,
-        keywords: "align right",
-        command: (editor) => editor.chain().focus().setTextAlign("right").run(),
+        keywords: 'align right',
+        command: (editor) => editor.chain().focus().setTextAlign('right').run(),
       },
     ],
   },
-];
+]
 
 export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
-  const commandRef = useRef<HTMLDivElement>(null);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
+  const commandRef = useRef<HTMLDivElement>(null)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([])
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
 
   const filteredGroups = useMemo(
     () =>
@@ -191,25 +189,22 @@ export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
             (item) =>
               item.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
               item.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-              item.keywords.toLowerCase().includes(debouncedSearch.toLowerCase())
+              item.keywords.toLowerCase().includes(debouncedSearch.toLowerCase()),
           ),
         }))
         .filter((group) => group.items.length > 0),
-    [debouncedSearch]
-  );
+    [debouncedSearch],
+  )
 
-  const flatFilteredItems = useMemo(
-    () => filteredGroups.flatMap((g) => g.items),
-    [filteredGroups]
-  );
+  const flatFilteredItems = useMemo(() => filteredGroups.flatMap((g) => g.items), [filteredGroups])
 
   const executeCommand = useCallback(
     (commandFn: (editor: Editor) => void) => {
-      if (!editor) return;
+      if (!editor) return
 
       try {
-        const { from } = editor.state.selection;
-        const slashCommandLength = search.length + 1;
+        const { from } = editor.state.selection
+        const slashCommandLength = search.length + 1
 
         editor
           .chain()
@@ -218,127 +213,131 @@ export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
             from: Math.max(0, from - slashCommandLength),
             to: from,
           })
-          .run();
+          .run()
 
-        commandFn(editor);
+        commandFn(editor)
       } catch (error) {
-        console.error("Error executing command:", error);
+        console.error('Error executing command:', error)
       } finally {
-        setIsOpen(false);
-        setSearch("");
-        setSelectedIndex(-1);
+        setIsOpen(false)
+        setSearch('')
+        setSelectedIndex(-1)
       }
     },
-    [editor, search]
-  );
+    [editor, search],
+  )
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!isOpen || !editor) return;
+      if (!isOpen || !editor) return
 
       const preventDefault = () => {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      };
+        e.preventDefault()
+        e.stopImmediatePropagation()
+      }
 
       switch (e.key) {
-        case "ArrowDown":
-          preventDefault();
+        case 'ArrowDown':
+          preventDefault()
           setSelectedIndex((prev) => {
-            if (prev === -1) return 0;
-            return prev < flatFilteredItems.length - 1 ? prev + 1 : 0;
-          });
-          break;
+            if (prev === -1) return 0
+            return prev < flatFilteredItems.length - 1 ? prev + 1 : 0
+          })
+          break
 
-        case "ArrowUp":
-          preventDefault();
+        case 'ArrowUp':
+          preventDefault()
           setSelectedIndex((prev) => {
-            if (prev === -1) return flatFilteredItems.length - 1;
-            return prev > 0 ? prev - 1 : flatFilteredItems.length - 1;
-          });
-          break;
+            if (prev === -1) return flatFilteredItems.length - 1
+            return prev > 0 ? prev - 1 : flatFilteredItems.length - 1
+          })
+          break
 
-        case "Enter":
-          preventDefault();
-          const targetIndex = selectedIndex === -1 ? 0 : selectedIndex;
+        case 'Enter': {
+          preventDefault()
+          const targetIndex = selectedIndex === -1 ? 0 : selectedIndex
           if (flatFilteredItems[targetIndex]) {
-            executeCommand(flatFilteredItems[targetIndex].command);
+            executeCommand(flatFilteredItems[targetIndex].command)
           }
-          break;
+          break
+        }
 
-        case "Escape":
-          preventDefault();
-          setIsOpen(false);
-          setSelectedIndex(-1);
-          break;
+        case 'Escape':
+          preventDefault()
+          setIsOpen(false)
+          setSelectedIndex(-1)
+          break
       }
     },
-    [isOpen, selectedIndex, flatFilteredItems, executeCommand, editor]
-  );
+    [isOpen, selectedIndex, flatFilteredItems, executeCommand, editor],
+  )
 
   useEffect(() => {
-    if (!editor?.options.element) return;
+    if (!editor?.options.element) return
 
-    const editorElement = editor.options.element;
-    const handleEditorKeyDown = (e: Event) => handleKeyDown(e as KeyboardEvent);
+    const editorElement = editor.options.element
+    const handleEditorKeyDown = (e: Event) => handleKeyDown(e as KeyboardEvent)
     const handleEditorKeyUp = () => {
-      if (!editor) return;
-      const { $from } = editor.state.selection as any;
-      const currentLineText = $from.parent.textBetween(0, $from.parentOffset, "\n", " ");
+      if (!editor) return
+      const { $from } = editor.state.selection as any
+      const currentLineText = $from.parent.textBetween(0, $from.parentOffset, '\n', ' ')
       const isSlashCommand =
-        currentLineText.startsWith("/") &&
-        $from.parent.type.name !== "codeBlock" &&
-        $from.parentOffset === currentLineText.length;
+        currentLineText.startsWith('/') &&
+        $from.parent.type.name !== 'codeBlock' &&
+        $from.parentOffset === currentLineText.length
 
       if (!isSlashCommand) {
-        if (isOpen) setIsOpen(false);
-        return;
+        if (isOpen) setIsOpen(false)
+        return
       }
 
-      const query = currentLineText.slice(1).trim();
-      if (query !== search) setSearch(query);
-      if (!isOpen) setIsOpen(true);
+      const query = currentLineText.slice(1).trim()
+      if (query !== search) setSearch(query)
+      if (!isOpen) setIsOpen(true)
 
       try {
-        const { bottom, left } = editor.view.coordsAtPos($from.pos);
-        setMenuPos({ top: bottom + window.scrollY + 6, left: left + window.scrollX });
+        const { bottom, left } = editor.view.coordsAtPos($from.pos)
+        setMenuPos({ top: bottom + window.scrollY + 6, left: left + window.scrollX })
       } catch {}
-    };
+    }
 
-    editorElement.addEventListener("keydown", handleEditorKeyDown);
-    editorElement.addEventListener("keyup", handleEditorKeyUp);
-    const offSelection = editor.on?.("selectionUpdate", () => {
-      if (!isOpen) return;
+    editorElement.addEventListener('keydown', handleEditorKeyDown)
+    editorElement.addEventListener('keyup', handleEditorKeyUp)
+    const offSelection = editor.on?.('selectionUpdate', () => {
+      if (!isOpen) return
       try {
-        const { $from } = editor.state.selection as any;
-        const { bottom, left } = editor.view.coordsAtPos($from.pos);
-        setMenuPos({ top: bottom + window.scrollY + 6, left: left + window.scrollX });
+        const { $from } = editor.state.selection as any
+        const { bottom, left } = editor.view.coordsAtPos($from.pos)
+        setMenuPos({ top: bottom + window.scrollY + 6, left: left + window.scrollX })
       } catch {}
-    });
-    return () =>
-      {
-        editorElement.removeEventListener("keydown", handleEditorKeyDown);
-        editorElement.removeEventListener("keyup", handleEditorKeyUp);
-        if (offSelection && typeof offSelection === 'function') offSelection();
-      };
-  }, [handleKeyDown, editor, isOpen, search]);
+    })
+    return () => {
+      editorElement.removeEventListener('keydown', handleEditorKeyDown)
+      editorElement.removeEventListener('keyup', handleEditorKeyUp)
+      if (offSelection && typeof offSelection === 'function') offSelection()
+    }
+  }, [handleKeyDown, editor, isOpen, search])
 
   // Add new effect for resetting selectedIndex
   useEffect(() => {
-    setSelectedIndex(-1);
-  }, [search]);
+    setSelectedIndex(-1)
+  }, [search])
 
   useEffect(() => {
     if (selectedIndex >= 0 && itemRefs.current[selectedIndex]) {
-      itemRefs.current[selectedIndex]?.focus();
+      itemRefs.current[selectedIndex]?.focus()
     }
-  }, [selectedIndex]);
+  }, [selectedIndex])
 
-  if (!isOpen || !menuPos) return null;
+  if (!isOpen || !menuPos) return null
 
   return createPortal(
     <div style={{ position: 'absolute', top: menuPos.top, left: menuPos.left, zIndex: 50 }}>
-      <Command role="listbox" ref={commandRef} className={cn("w-72 overflow-hidden rounded-lg border bg-popover shadow-lg") }>
+      <Command
+        role="listbox"
+        ref={commandRef}
+        className={cn('w-72 overflow-hidden rounded-lg border bg-popover shadow-lg')}
+      >
         <ScrollArea className="max-h-[330px]">
           <CommandList>
             <CommandEmpty className="py-3 text-center text-sm text-muted-foreground">
@@ -358,7 +357,7 @@ export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
                   const flatIndex =
                     filteredGroups
                       .slice(0, groupIndex)
-                      .reduce((acc, g) => acc + g.items.length, 0) + itemIndex;
+                      .reduce((acc, g) => acc + g.items.length, 0) + itemIndex
 
                   return (
                     <CommandItem
@@ -367,12 +366,12 @@ export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
                       value={`${group.group}-${item.title}`}
                       onSelect={() => executeCommand(item.command)}
                       className={cn(
-                        "gap-3 aria-selected:bg-accent/50",
-                        flatIndex === selectedIndex ? "bg-accent/50" : ""
+                        'gap-3 aria-selected:bg-accent/50',
+                        flatIndex === selectedIndex ? 'bg-accent/50' : '',
                       )}
                       aria-selected={flatIndex === selectedIndex}
                       ref={(el) => {
-                        itemRefs.current[flatIndex] = el;
+                        itemRefs.current[flatIndex] = el
                       }}
                       tabIndex={flatIndex === selectedIndex ? 0 : -1}
                     >
@@ -380,18 +379,14 @@ export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
                         <item.icon className="h-4 w-4" />
                       </div>
                       <div className="flex flex-1 flex-col">
-                        <span className="text-sm font-medium">
-                          {item.title}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {item.description}
-                        </span>
+                        <span className="text-sm font-medium">{item.title}</span>
+                        <span className="text-xs text-muted-foreground">{item.description}</span>
                       </div>
                       <kbd className="ml-auto flex h-5 items-center rounded bg-muted px-1.5 text-xs text-muted-foreground">
                         ↵
                       </kbd>
                     </CommandItem>
-                  );
+                  )
                 })}
               </CommandGroup>
             ))}
@@ -399,6 +394,6 @@ export function TipTapFloatingMenu({ editor }: { editor: Editor }) {
         </ScrollArea>
       </Command>
     </div>,
-    document.body
-  );
+    document.body,
+  )
 }

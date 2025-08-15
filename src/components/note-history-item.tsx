@@ -1,6 +1,5 @@
 'use client'
 
-import { useQueryClient } from '@tanstack/react-query'
 import type { Route } from 'next'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -19,14 +18,12 @@ interface NoteHistoryItemProps {
 export function NoteHistoryItem({ note, NoteActionsMenu }: NoteHistoryItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const updateNoteMutation = useUpdateNoteMutation()
-  const queryClient = useQueryClient()
 
   const handleSave = async (newTitle: string) => {
     await updateNoteMutation.mutateAsync({
       noteId: note.id,
       updates: { title: newTitle },
     })
-    await queryClient.invalidateQueries({ queryKey: ['notes'] })
   }
 
   return (
