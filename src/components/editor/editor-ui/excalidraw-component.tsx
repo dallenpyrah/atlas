@@ -1,4 +1,6 @@
-import type { AppState, BinaryFiles } from '@excalidraw/excalidraw/types/types'
+type AppState = any
+type BinaryFiles = any
+
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { useLexicalEditable } from '@lexical/react/useLexicalEditable'
 import { useLexicalNodeSelection } from '@lexical/react/useLexicalNodeSelection'
@@ -128,10 +130,10 @@ export default function ExcalidrawComponent({
   }
 
   const onResizeEnd = (nextWidth: 'inherit' | number, nextHeight: 'inherit' | number) => {
-    // Delay hiding the resize bars for click case
+    const RESIZE_UI_HIDE_DELAY = 200
     setTimeout(() => {
       setIsResizing(false)
-    }, 200)
+    }, RESIZE_UI_HIDE_DELAY)
 
     editor.update(() => {
       const node = $getNodeByKey(nodeKey)

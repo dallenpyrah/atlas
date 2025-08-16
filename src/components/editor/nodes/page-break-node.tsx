@@ -93,7 +93,7 @@ export class PageBreakNode extends DecoratorNode<JSX.Element> {
     return new PageBreakNode(node.__key)
   }
 
-  static importJSON(serializedNode: SerializedPageBreakNode): PageBreakNode {
+  static importJSON(_serializedNode: SerializedPageBreakNode): PageBreakNode {
     return $createPageBreakNode()
   }
 

@@ -110,14 +110,6 @@ export function UpdateInlineImageDialog({
   const [showCaption, setShowCaption] = useState(node.getShowCaption())
   const [position, setPosition] = useState<Position>(node.getPosition())
 
-  const handleShowCaptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setShowCaption(e.target.checked)
-  }
-
-  const handlePositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPosition(e.target.value as Position)
-  }
-
   const handleOnConfirm = () => {
     const payload = { altText, position, showCaption }
     if (node) {
@@ -232,7 +224,6 @@ export default function InlineImageComponent({
         latestSelection.getNodes().length === 1
       ) {
         if (showCaption) {
-          // Move focus into nested editor
           $setSelection(null)
           event.preventDefault()
           caption.focus()
@@ -304,8 +295,6 @@ export default function InlineImageComponent({
         DRAGSTART_COMMAND,
         (event) => {
           if (event.target === imageRef.current) {
-            // TODO This is just a temporary workaround for FF to behave like other browsers.
-            // Ideally, this handles drag & drop too (and all browsers).
             event.preventDefault()
             return true
           }

@@ -86,7 +86,6 @@ export class ExcalidrawNode extends DecoratorNode<JSX.Element> {
     this.__height = height
   }
 
-  // View
   createDOM(config: EditorConfig): HTMLElement {
     const span = document.createElement('span')
     const theme = config.theme
@@ -158,7 +157,7 @@ export class ExcalidrawNode extends DecoratorNode<JSX.Element> {
     self.__height = height
   }
 
-  decorate(editor: LexicalEditor, config: EditorConfig): JSX.Element {
+  decorate(_editor: LexicalEditor, _config: EditorConfig): JSX.Element {
     return (
       <Suspense fallback={null}>
         <ExcalidrawComponent

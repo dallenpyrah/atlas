@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import type { FileRecord } from '@/app/api/files/utils'
 import { FileActionsMenu } from '@/components/file-actions-menu'
+import { FileTreeItem } from '@/components/file-tree-item'
+import { FileUploadDropzone } from '@/components/file-upload-dropzone'
 import { useAppContext } from '@/components/providers/context-provider'
 import { type TreeDataItem, TreeView } from '@/components/tree-view'
-import { useKeepPrevious } from '@/hooks/use-keep-previous'
-import { queryKeys } from '@/lib/query-keys'
-import { fileService } from '@/services/file'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,27 +18,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { FileUploadDropzone } from '@/components/file-upload-dropzone'
+import { EditableTitle } from '@/components/ui/editable-title'
 import { Progress } from '@/components/ui/progress'
+import { useKeepPrevious } from '@/hooks/use-keep-previous'
+import { queryKeys } from '@/lib/query-keys'
 import {
+  type UploadProgress,
   useCreateFolderMutation,
   useDeleteFileMutation,
-  useUpdateFileMutation,
   useUploadFilesMutation,
-  type UploadProgress,
 } from '@/mutations/file'
 import { useCurrentUser } from '@/queries/auth'
+import { fileService } from '@/services/file'
 
 const FOLDERS_SORT_FIRST = -1
 const FILES_SORT_SECOND = 1
 
-export function FileTree({
-  onFileClick,
-}: {
-  onFileClick?: (file: FileRecord) => void
-}) {
+export function FileTree({ onFileClick }: { onFileClick?: (file: FileRecord) => void }) {
   const router = useRouter()
   const { context } = useAppContext()
   const spaceId = context?.type === 'space' ? context.id : null
@@ -47,25 +42,31 @@ export function FileTree({
   const spaceIdOpt = spaceId ?? undefined
   const organizationIdOpt = organizationId ?? undefined
   const [selectedFileId, setSelectedFileId] = useState<string | undefined>()
+  const [editingFileId, setEditingFileId] = useState<string | undefined>()
+  const [creatingFolderUnder, setCreatingFolderUnder] = useState<string | null>(null)
 
   const { data: files } = useKeepPrevious({
-    queryKey: queryKeys.files.list({ spaceId: spaceIdOpt, organizationId: organizationIdOpt, folderId: null }),
-    queryFn: () => fileService.listFiles({ spaceId: spaceIdOpt, organizationId: organizationIdOpt, folderId: null }),
+    queryKey: queryKeys.files.list({
+      spaceId: spaceIdOpt,
+      organizationId: organizationIdOpt,
+      folderId: null,
+    }),
+    queryFn: () =>
+      fileService.listFiles({
+        spaceId: spaceIdOpt,
+        organizationId: organizationIdOpt,
+        folderId: null,
+      }),
   })
 
   // Dialog state & mutations
-  const [renameTarget, setRenameTarget] = useState<FileRecord | null>(null)
-  const [renameValue, setRenameValue] = useState('')
-  const [newFolderParent, setNewFolderParent] = useState<FileRecord | null>(null)
-  const [newFolderName, setNewFolderName] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<FileRecord | null>(null)
   const [uploadTarget, setUploadTarget] = useState<FileRecord | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
   const { data: session } = useCurrentUser()
 
-  const { mutateAsync: updateFile, isPending: isRenaming } = useUpdateFileMutation()
-  const { mutateAsync: createFolder, isPending: isCreatingFolder } = useCreateFolderMutation()
+  const { mutateAsync: createFolder } = useCreateFolderMutation()
   const { mutateAsync: deleteFile, isPending: isDeleting } = useDeleteFileMutation()
   const { mutateAsync: uploadFiles, isPending: isUploading } = useUploadFilesMutation({
     onProgress: setUploadProgress,
@@ -93,8 +94,7 @@ export function FileTree({
   }
 
   const handleRename = (file: FileRecord) => {
-    setRenameTarget(file)
-    setRenameValue(file.filename)
+    setEditingFileId(file.id)
   }
 
   const handleDelete = (file: FileRecord) => {
@@ -106,7 +106,7 @@ export function FileTree({
   }
 
   const handleNewFolder = (parent: FileRecord) => {
-    setNewFolderParent(parent)
+    setCreatingFolderUnder(parent.id)
   }
 
   const handleOpenFolder = (folderId: string) => {
@@ -133,28 +133,24 @@ export function FileTree({
     }
   }
 
-  async function performRename() {
-    if (!renameTarget || !renameValue.trim()) return
-    try {
-      await updateFile({ id: renameTarget.id, name: renameValue.trim() })
-      setRenameTarget(null)
-      setRenameValue('')
-    } catch (_) {}
-  }
-
-  async function performCreateFolder() {
-    if (!newFolderParent || !newFolderName.trim() || !session?.user) return
-    const normalized = newFolderName.trim().toLowerCase()
+  const handleCreateNewFolder = async (name: string) => {
+    if (!creatingFolderUnder || !name.trim() || !session?.user) return
+    const normalized = name.trim().toLowerCase()
     try {
       await createFolder({
         name: normalized,
-        parentId: newFolderParent.id,
+        parentId: creatingFolderUnder,
         spaceId: spaceIdOpt,
         organizationId: organizationIdOpt,
       })
-      setNewFolderParent(null)
-      setNewFolderName('')
-    } catch (_) {}
+      setCreatingFolderUnder(null)
+    } catch (_) {
+      setCreatingFolderUnder(null)
+    }
+  }
+
+  const handleCancelNewFolder = () => {
+    setCreatingFolderUnder(null)
   }
 
   async function performDelete() {
@@ -198,12 +194,46 @@ export function FileTree({
     )
   }
 
+  const createNewFolderItem = (parentId: string): TreeDataItem => {
+    return {
+      id: `new-folder-${parentId}`,
+      name: '',
+      icon: Folder,
+      selectedIcon: Folder,
+      openIcon: Folder,
+      onClick: () => {},
+      draggable: false,
+      droppable: false,
+      customContent: (
+        <EditableTitle
+          title=""
+          onSave={handleCreateNewFolder}
+          isEditing={true}
+          onEditingChange={(editing) => {
+            if (!editing) {
+              handleCancelNewFolder()
+            }
+          }}
+          className="flex-grow text-sm truncate"
+          placeholder="New folder name"
+        />
+      ),
+    }
+  }
+
   const createTreeItem = (
     item: FileRecord,
     buildTree: (items: FileRecord[], parentId?: string | null) => TreeDataItem[],
   ): TreeDataItem => {
     const isFolder = item.metadata?.isFolder || false
     const children = isFolder ? buildTree(files!, item.id) : undefined
+    const isEditing = editingFileId === item.id
+
+    // Add new folder item if we're creating under this folder
+    const childrenWithNewFolder = children ? [...children] : []
+    if (isFolder && creatingFolderUnder === item.id) {
+      childrenWithNewFolder.unshift(createNewFolderItem(item.id))
+    }
 
     return {
       id: item.id,
@@ -211,24 +241,38 @@ export function FileTree({
       icon: isFolder ? Folder : File,
       selectedIcon: isFolder ? FolderOpen : File,
       openIcon: isFolder ? FolderOpen : File,
-      children,
+      children: childrenWithNewFolder.length > 0 ? childrenWithNewFolder : undefined,
       actions: createFileActions(item),
       onClick: () => handleFileClick(item.id),
       draggable: true,
       droppable: isFolder,
+      customContent: (
+        <FileTreeItem
+          file={item}
+          isEditing={isEditing}
+          onEditingChange={(editing) => setEditingFileId(editing ? item.id : undefined)}
+        />
+      ),
     }
   }
 
   const buildTree = (items: FileRecord[], parentId: string | null = null): TreeDataItem[] => {
-    return filterItemsByParent(items, parentId)
+    const treeItems = filterItemsByParent(items, parentId)
       .sort(sortFoldersFirst)
       .map((item) => createTreeItem(item, buildTree))
+
+    // Add new folder item at root level if creating under root
+    if (parentId === null && creatingFolderUnder === null && creatingFolderUnder !== 'root') {
+      // We don't add at root level in this implementation
+    }
+
+    return treeItems
   }
 
   const treeData = useMemo(() => {
     if (!files) return []
     return buildTree(files)
-  }, [files, selectedFileId])
+  }, [files, selectedFileId, editingFileId, creatingFolderUnder])
 
   const handleDocumentDrag = (sourceItem: TreeDataItem, targetItem: TreeDataItem) => {
     console.log('Moving', sourceItem.name, 'to', targetItem.name)
@@ -254,66 +298,6 @@ export function FileTree({
         onDocumentDrag={handleDocumentDrag}
       />
 
-      {/* Rename dialog */}
-      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename</DialogTitle>
-            <DialogDescription>Enter a new name for this item.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-2 py-2">
-            <Label htmlFor="rename">Name</Label>
-            <Input
-              id="rename"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && renameValue.trim()) void performRename()
-              }}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameTarget(null)} disabled={isRenaming}>
-              Cancel
-            </Button>
-            <Button onClick={() => void performRename()} disabled={isRenaming || !renameValue.trim()}>
-              {isRenaming ? 'Renaming...' : 'Rename'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New folder dialog */}
-      <Dialog open={!!newFolderParent} onOpenChange={(o) => !o && setNewFolderParent(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Folder</DialogTitle>
-            <DialogDescription>Enter a name for the new folder.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-2 py-2">
-            <Label htmlFor="new-folder">Folder name</Label>
-            <Input
-              id="new-folder"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newFolderName.trim()) void performCreateFolder()
-              }}
-              placeholder="e.g. documents"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewFolderParent(null)} disabled={isCreatingFolder}>
-              Cancel
-            </Button>
-            <Button onClick={() => void performCreateFolder()} disabled={isCreatingFolder || !newFolderName.trim()}>
-              {isCreatingFolder ? 'Creating...' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete confirm */}
       <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <DialogContent>
@@ -328,7 +312,11 @@ export function FileTree({
             <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => void performDelete()} disabled={isDeleting}>
+            <Button
+              variant="destructive"
+              onClick={() => void performDelete()}
+              disabled={isDeleting}
+            >
               <Trash2 className="mr-2 h-4 w-4" /> {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
@@ -351,7 +339,9 @@ export function FileTree({
                 <div className="text-sm text-muted-foreground">
                   Uploading {uploadProgress.completedFiles} of {uploadProgress.totalFiles} files...
                   {uploadProgress.failedFiles > 0 && (
-                    <span className="text-destructive ml-2">({uploadProgress.failedFiles} failed)</span>
+                    <span className="text-destructive ml-2">
+                      ({uploadProgress.failedFiles} failed)
+                    </span>
                   )}
                 </div>
                 <Progress value={uploadProgress.percentage} className="w-full" />
@@ -362,8 +352,13 @@ export function FileTree({
             <Button variant="outline" onClick={() => setUploadTarget(null)} disabled={isUploading}>
               Cancel
             </Button>
-            <Button onClick={() => void performUpload()} disabled={selectedFiles.length === 0 || isUploading}>
-              {isUploading ? `Uploading... ${uploadProgress?.percentage || 0}%` : `Upload ${selectedFiles.length} file(s)`}
+            <Button
+              onClick={() => void performUpload()}
+              disabled={selectedFiles.length === 0 || isUploading}
+            >
+              {isUploading
+                ? `Uploading... ${uploadProgress?.percentage || 0}%`
+                : `Upload ${selectedFiles.length} file(s)`}
             </Button>
           </DialogFooter>
         </DialogContent>

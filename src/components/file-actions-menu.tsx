@@ -1,7 +1,6 @@
 'use client'
 
 import { Edit2, FolderOpen, FolderPlus, MoreHorizontal, Trash2, Upload } from 'lucide-react'
-import { useState } from 'react'
 import type { FileRecord } from '@/app/api/files/utils'
 import { Button } from '@/components/ui/button'
 import {

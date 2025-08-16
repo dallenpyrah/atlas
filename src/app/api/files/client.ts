@@ -4,6 +4,20 @@ import { nanoid } from 'nanoid'
 import { db } from '@/lib/db'
 import { file as fileTable } from '@/lib/db/schema/file'
 
+interface FileMetadata {
+  isFolder?: boolean
+  parentId?: string | null
+  path?: string | null
+  [key: string]: unknown
+}
+
+interface UpdateData {
+  filename?: string
+  originalName?: string
+  metadata?: FileMetadata | null
+  updatedAt: Date
+}
+
 export async function uploadFileToBlob(file: File, pathname: string) {
   const blob = await put(pathname, file, {
     access: 'public',
@@ -23,7 +37,7 @@ export async function createFileRecord(params: {
   userId: string
   spaceId?: string
   organizationId?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }) {
   const now = new Date()
   const fileId = params.id || nanoid()
@@ -121,7 +135,7 @@ export async function fetchFiles(params: {
 
   if (params.parentId !== undefined) {
     return files.filter((file) => {
-      const metadata = file.metadata as any
+      const metadata = file.metadata as FileMetadata | null
       if (params.parentId === null) {
         return !metadata?.parentId
       }
@@ -142,11 +156,11 @@ export async function updateFileRecord(
   fileId: string,
   updates: {
     filename?: string
-    metadata?: Record<string, any> | null
+    metadata?: FileMetadata | null
   },
 ) {
   const now = new Date()
-  const updateData: any = {
+  const updateData: UpdateData = {
     updatedAt: now,
   }
 
@@ -206,7 +220,7 @@ export async function fetchFolderContents(
     .orderBy(desc(fileTable.updatedAt))
 
   return files.filter((file) => {
-    const metadata = file.metadata as any
+    const metadata = file.metadata as FileMetadata | null
     return metadata?.parentId === folderId
   })
 }

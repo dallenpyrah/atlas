@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import type { AIModel } from '@/lib/ai/models'
 import { apiLogger } from '@/lib/api-logger'
 import { auth } from '@/lib/auth'
-import { exaTools } from '@/lib/tools'
+import { exaTools, supermemoryTools } from '@/lib/tools'
 import * as response from './response'
 import { createOnFinish } from './service'
 import {
@@ -35,11 +35,18 @@ export async function POST(req: Request) {
     const messages = await getMessagesFromRequest(req)
     const selectedModelId = getSelectedModelIdFromMessages(messages)
 
+    const lastUserMessage = messages.find((m) => m.role === 'user')
+    const userMetadata = (lastUserMessage?.metadata as Record<string, any> | undefined) ?? {}
+    const spaceId = userMetadata.spaceId ?? null
+    const organizationId = userMetadata.organizationId ?? null
+
     apiLogger.logRequest(logContext, {
       body: {
         messageCount: messages.length,
         selectedModelId,
         lastMessageRole: messages[messages.length - 1]?.role,
+        spaceId,
+        organizationId,
       },
     })
 
@@ -70,6 +77,20 @@ export async function POST(req: Request) {
             excludeTools: [],
           },
         ),
+        ...(process.env.SUPERMEMORY_API_KEY
+          ? supermemoryTools(
+              {
+                apiKey: process.env.SUPERMEMORY_API_KEY,
+                defaultLimit: 5,
+                userId: session.user.id,
+                spaceId: spaceId ?? undefined,
+                organizationId: organizationId ?? undefined,
+              },
+              {
+                excludeTools: [],
+              },
+            )
+          : {}),
       },
       toolChoice: 'auto',
       providerOptions: modelInfo.providerOptions,

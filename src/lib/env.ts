@@ -24,6 +24,8 @@ const envSchema = z.object({
   XAI_API_KEY: z.string().optional(),
   EXA_API_KEY: z.string().optional(),
   AI_GATEWAY_API_KEY: z.string().optional(),
+  TWITTER_API_KEY: z.string().optional(),
+  SUPERMEMORY_API_KEY: z.string().optional(),
 })
 
 type Env = z.infer<typeof envSchema>

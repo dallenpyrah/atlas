@@ -61,7 +61,7 @@ function PollOptionComponent({
           ref={checkboxRef}
           className="absolute block h-full w-full cursor-pointer border-0 opacity-0"
           type="checkbox"
-          onChange={(e) => {
+          onChange={(_e) => {
             withPollNode((node) => {
               node.toggleVote(option, clientID)
             })

@@ -47,8 +47,7 @@ export class CollapsibleContainerNode extends ElementNode {
     return new CollapsibleContainerNode(node.__open, node.__key)
   }
 
-  createDOM(config: EditorConfig, editor: LexicalEditor): HTMLElement {
-    // details is not well supported in Chrome #5582
+  createDOM(_config: EditorConfig, editor: LexicalEditor): HTMLElement {
     let dom: HTMLElement
     if (IS_CHROME) {
       dom = document.createElement('div')
@@ -72,7 +71,6 @@ export class CollapsibleContainerNode extends ElementNode {
   updateDOM(prevNode: CollapsibleContainerNode, dom: HTMLDetailsElement): boolean {
     const currentOpen = this.__open
     if (prevNode.__open !== currentOpen) {
-      // details is not well supported in Chrome #5582
       if (IS_CHROME) {
         const contentDom = dom.children[1]
         invariant(isHTMLElement(contentDom), 'Expected contentDom to be an HTMLElement')
@@ -93,7 +91,7 @@ export class CollapsibleContainerNode extends ElementNode {
 
   static importDOM(): DOMConversionMap<HTMLDetailsElement> | null {
     return {
-      details: (domNode: HTMLDetailsElement) => {
+      details: (_domNode: HTMLDetailsElement) => {
         return {
           conversion: $convertDetailsElement,
           priority: 1,

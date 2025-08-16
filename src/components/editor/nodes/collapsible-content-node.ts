@@ -17,7 +17,7 @@ import { domOnBeforeMatch, setDomHiddenUntilFound } from '@/components/editor/ut
 type SerializedCollapsibleContentNode = SerializedElementNode
 
 export function $convertCollapsibleContentElement(
-  domNode: HTMLElement,
+  _domNode: HTMLElement,
 ): DOMConversionOutput | null {
   const node = $createCollapsibleContentNode()
   return {
@@ -34,7 +34,7 @@ export class CollapsibleContentNode extends ElementNode {
     return new CollapsibleContentNode(node.__key)
   }
 
-  createDOM(config: EditorConfig, editor: LexicalEditor): HTMLElement {
+  createDOM(_config: EditorConfig, editor: LexicalEditor): HTMLElement {
     const dom = document.createElement('div')
     dom.classList.add('pt-0', 'pr-1', 'pb-1', 'pl-4')
     if (IS_CHROME) {
@@ -64,7 +64,7 @@ export class CollapsibleContentNode extends ElementNode {
     return dom
   }
 
-  updateDOM(prevNode: CollapsibleContentNode, dom: HTMLElement): boolean {
+  updateDOM(_prevNode: CollapsibleContentNode, _dom: HTMLElement): boolean {
     return false
   }
 
@@ -89,7 +89,7 @@ export class CollapsibleContentNode extends ElementNode {
     return { element }
   }
 
-  static importJSON(serializedNode: SerializedCollapsibleContentNode): CollapsibleContentNode {
+  static importJSON(_serializedNode: SerializedCollapsibleContentNode): CollapsibleContentNode {
     return $createCollapsibleContentNode()
   }
 

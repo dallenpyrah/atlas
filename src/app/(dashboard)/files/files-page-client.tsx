@@ -99,9 +99,7 @@ export function FilesPageClient({ path }: FilesPageClientProps) {
     if (index === -1) {
       router.push('/files', { scroll: false })
     } else {
-      const newPath = folderPath
-        .slice(0, index + 1)
-        .map((f) => (f.name || '').toLowerCase())
+      const newPath = folderPath.slice(0, index + 1).map((f) => (f.name || '').toLowerCase())
       router.push(`/files/${newPath.join('/')}`, { scroll: false })
     }
   }

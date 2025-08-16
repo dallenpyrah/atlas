@@ -14,11 +14,11 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useCreateFolderMutation } from '@/mutations/file'
 import { useKeepPrevious } from '@/hooks/use-keep-previous'
 import { queryKeys } from '@/lib/query-keys'
-import { fileService } from '@/services/file'
+import { useCreateFolderMutation } from '@/mutations/file'
 import { useCurrentUser } from '@/queries/auth'
+import { fileService } from '@/services/file'
 
 interface CreateFolderDialogProps {
   currentFolderId: string | null
@@ -36,10 +36,9 @@ export function CreateFolderDialog({
   const { data: session } = useCurrentUser()
   const { mutateAsync: createFolder, isPending } = useCreateFolderMutation()
   const { data: siblingItems } = useKeepPrevious({
-    queryKey:
-      currentFolderId
-        ? queryKeys.files.folderContents(currentFolderId, { spaceId, organizationId })
-        : queryKeys.files.list({ spaceId, organizationId, folderId: null }),
+    queryKey: currentFolderId
+      ? queryKeys.files.folderContents(currentFolderId, { spaceId, organizationId })
+      : queryKeys.files.list({ spaceId, organizationId, folderId: null }),
     queryFn: () =>
       currentFolderId
         ? fileService.getFolderContents(currentFolderId, { spaceId, organizationId })
@@ -100,7 +99,8 @@ export function CreateFolderDialog({
             />
             {folderName.trim() && folderName !== folderName.trim().toLowerCase() && (
               <p className="text-xs text-muted-foreground">
-                Will be created as: <span className="font-mono">{folderName.trim().toLowerCase()}</span>
+                Will be created as:{' '}
+                <span className="font-mono">{folderName.trim().toLowerCase()}</span>
               </p>
             )}
             {folderName.trim() && siblingFolderNames.includes(folderName.trim().toLowerCase()) && (

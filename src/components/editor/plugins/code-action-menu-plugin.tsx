@@ -4,14 +4,6 @@ import { $isCodeNode, CodeNode, getLanguageFriendlyName, normalizeCodeLang } fro
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $getNearestNodeFromDOMNode } from 'lexical'
 import type * as React from 'react'
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-// import './index.css';
 import { type JSX, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -123,7 +115,6 @@ function CodeActionMenuContainer({ anchorElem }: { anchorElem: HTMLElement }): J
     )
   }, [editor])
 
-  const normalizedLang = normalizeCodeLang(lang)
   const codeFriendlyName = getLanguageFriendlyName(lang)
 
   return (

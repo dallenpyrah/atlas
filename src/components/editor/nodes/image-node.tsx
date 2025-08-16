@@ -68,7 +68,6 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   __maxWidth: number
   __showCaption: boolean
   __caption: LexicalEditor
-  // Captions cannot yet be used within editor cells
   __captionsEnabled: boolean
 
   static getType(): string {
@@ -118,7 +117,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
 
   static importDOM(): DOMConversionMap | null {
     return {
-      img: (node: Node) => ({
+      img: (_node: Node) => ({
         conversion: $convertImageElement,
         priority: 0,
       }),
@@ -175,8 +174,6 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     const writable = this.getWritable()
     writable.__showCaption = showCaption
   }
-
-  // View
 
   createDOM(config: EditorConfig): HTMLElement {
     const span = document.createElement('span')

@@ -15,13 +15,6 @@ import {
   KEY_ARROW_RIGHT_COMMAND,
   KEY_TAB_COMMAND,
 } from 'lexical'
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
 import { type JSX, useCallback, useEffect } from 'react'
 
 import { useSharedAutocompleteContext } from '@/components/editor/context/shared-autocomplete-context'
@@ -41,14 +34,12 @@ export const uuid = Math.random()
   .replace(/[^a-z]+/g, '')
   .substr(0, 5)
 
-// TODO lookup should be custom
 function $search(selection: null | BaseSelection): [boolean, string] {
   if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
     return [false, '']
   }
   const node = selection.getNodes()[0]
   const anchor = selection.anchor
-  // Check siblings?
   if (!$isTextNode(node) || !node.isSimpleText() || !$isAtNodeEnd(anchor)) {
     return [false, '']
   }
@@ -65,7 +56,6 @@ function $search(selection: null | BaseSelection): [boolean, string] {
   return [true, word.reverse().join('')]
 }
 
-// TODO query should be custom
 function useQuery(): (searchText: string) => SearchPromise {
   return useCallback((searchText: string) => {
     const server = new AutocompleteServer()
@@ -103,7 +93,6 @@ export function AutocompletePlugin(): JSX.Element | null {
     }
     function updateAsyncSuggestion(refSearchPromise: SearchPromise, newSuggestion: null | string) {
       if (searchPromise !== refSearchPromise || newSuggestion === null) {
-        // Outdated or no suggestion
         return
       }
       editor.update(
@@ -111,7 +100,6 @@ export function AutocompletePlugin(): JSX.Element | null {
           const selection = $getSelection()
           const [hasMatch, match] = $search(selection)
           if (!hasMatch || match !== lastMatch || !$isRangeSelection(selection)) {
-            // Outdated
             return
           }
           const selectionCopy = selection.clone()
@@ -129,7 +117,6 @@ export function AutocompletePlugin(): JSX.Element | null {
     function $handleAutocompleteNodeTransform(node: AutocompleteNode) {
       const key = node.getKey()
       if (node.__uuid === uuid && key !== autocompleteNodeKey) {
-        // Max one Autocomplete node per session
         $clearSuggestion()
       }
     }
@@ -152,9 +139,7 @@ export function AutocompletePlugin(): JSX.Element | null {
               updateAsyncSuggestion(searchPromise, newSuggestion)
             }
           })
-          .catch((e) => {
-            // console.error(e)
-          })
+          .catch((_e) => {})
         lastMatch = match
       })
     }
@@ -207,10 +192,6 @@ export function AutocompletePlugin(): JSX.Element | null {
   return null
 }
 
-/*
- * Simulate an asynchronous autocomplete server (typical in more common use cases like GMail where
- * the data is not static).
- */
 class AutocompleteServer {
   DATABASE = DICTIONARY
   LATENCY = 200
@@ -224,7 +205,6 @@ class AutocompleteServer {
     const promise: Promise<null | string> = new Promise((resolve, reject) => {
       setTimeout(() => {
         if (isDismissed) {
-          // TODO cache result
           return reject('Dismissed')
         }
         const searchTextLength = searchText.length
@@ -260,7 +240,6 @@ class AutocompleteServer {
   }
 }
 
-// https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-usa-no-swears-long.txt
 const DICTIONARY = [
   'information',
   'available',

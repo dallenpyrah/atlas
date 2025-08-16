@@ -26,6 +26,7 @@ interface TreeDataItem {
   draggable?: boolean
   droppable?: boolean
   disabled?: boolean
+  customContent?: React.ReactNode
 }
 
 type TreeProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -104,6 +105,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeProps>(
         } else if (items.children) {
           return walkTreeItems(items.children, targetId)
         }
+        return false
       }
 
       walkTreeItems(data, initialSelectedItemId)
@@ -127,7 +129,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeProps>(
         />
         <div
           className="w-full h-[48px]"
-          onDrop={(e) => {
+          onDrop={() => {
             handleDrop({ id: '', name: 'parent_div' })
           }}
         ></div>
@@ -258,9 +260,10 @@ const TreeNode = ({
   return (
     <AccordionPrimitive.Root type="multiple" value={value} onValueChange={(s) => setValue(s)}>
       <AccordionPrimitive.Item value={item.id}>
-        <div className="relative flex items-center group">
+        <div className="relative flex items-center group w-full">
           <AccordionTrigger
             className={cn(
+              'flex-1 min-w-0',
               treeVariants(),
               selectedItemId === item.id && selectedTreeVariants(),
               isDragOver && dragOverVariants(),
@@ -281,7 +284,7 @@ const TreeNode = ({
               isOpen={value.includes(item.id)}
               default={defaultNodeIcon}
             />
-            <span className="text-sm truncate">{item.name}</span>
+            {item.customContent || <span className="text-sm truncate">{item.name}</span>}
           </AccordionTrigger>
           <TreeActions isSelected={selectedItemId === item.id}>{item.actions}</TreeActions>
         </div>
@@ -359,11 +362,11 @@ const TreeLeaf = React.forwardRef<
     }
 
     return (
-      <div className="relative flex items-center ml-5 group">
+      <div className="relative flex items-center ml-5 group w-full">
         <div
           ref={ref}
           className={cn(
-            'flex text-left items-center py-2 cursor-pointer before:right-1 flex-1',
+            'flex text-left items-center py-2 cursor-pointer before:right-1 flex-1 min-w-0',
             treeVariants(),
             className,
             selectedItemId === item.id && selectedTreeVariants(),
@@ -383,7 +386,7 @@ const TreeLeaf = React.forwardRef<
           {...props}
         >
           <TreeIcon item={item} isSelected={selectedItemId === item.id} default={defaultLeafIcon} />
-          <span className="flex-grow text-sm truncate">{item.name}</span>
+          {item.customContent || <span className="flex-grow text-sm truncate">{item.name}</span>}
         </div>
         <TreeActions isSelected={selectedItemId === item.id && !item.disabled}>
           {item.actions}
@@ -395,14 +398,14 @@ const TreeLeaf = React.forwardRef<
 TreeLeaf.displayName = 'TreeLeaf'
 
 const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Trigger>,
+  React.ComponentRef<typeof AccordionPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Header>
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        'flex flex-1 w-full items-center py-2 transition-all first:[&[data-state=open]>svg]:rotate-90',
+        'flex items-center py-2 transition-all first:[&[data-state=open]>svg]:rotate-90 flex-1 min-w-0',
         className,
       )}
       {...props}
@@ -415,7 +418,7 @@ const AccordionTrigger = React.forwardRef<
 AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName
 
 const AccordionContent = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Content>,
+  React.ComponentRef<typeof AccordionPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
@@ -466,7 +469,7 @@ const TreeActions = ({
   return (
     <div
       className={cn(
-        'mr-2',
+        'flex-shrink-0 ml-auto mr-2',
         isSelected ? 'visible' : 'invisible group-hover:visible',
       )}
     >

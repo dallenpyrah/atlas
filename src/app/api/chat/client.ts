@@ -5,17 +5,32 @@ import { chat as chatTable, message as messageTable } from '@/lib/db/schema/chat
 import { member as orgMember } from '@/lib/db/schema/organization'
 import { spaceMember, space as spaceTable } from '@/lib/db/schema/space'
 
+interface ChatMetadata {
+  chatId?: string
+  chat_id?: string
+  [key: string]: unknown
+}
+
+interface MessageInsert {
+  id: string
+  chatId: string
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  parts: Array<{ type: string; [key: string]: unknown }>
+  metadata: unknown
+  createdAt: Date
+}
+
 export async function saveChatExchange(params: {
   user: UIMessage
   assistant: UIMessage
 }): Promise<void> {
   const { user, assistant } = params
 
-  const userMeta = (user?.metadata as Record<string, any> | undefined) ?? {}
-  const assistantMeta = (assistant?.metadata as Record<string, any> | undefined) ?? {}
+  const userMeta = (user?.metadata as ChatMetadata | undefined) ?? {}
+  const assistantMeta = (assistant?.metadata as ChatMetadata | undefined) ?? {}
   const chatId =
     assistantMeta.chatId ?? assistantMeta.chat_id ?? userMeta.chatId ?? userMeta.chat_id
-  if (!chatId) {
+  if (!chatId || typeof chatId !== 'string') {
     console.error('Failed to persist chat exchange: chatId is undefined', {
       user,
       assistant,
@@ -27,7 +42,7 @@ export async function saveChatExchange(params: {
   const assistantParts = Array.isArray(assistant.parts) ? assistant.parts : []
 
   const now = new Date()
-  await db.insert(messageTable).values([
+  const messages: MessageInsert[] = [
     {
       id: crypto.randomUUID(),
       chatId,
@@ -44,7 +59,8 @@ export async function saveChatExchange(params: {
       metadata: assistant.metadata ?? null,
       createdAt: now,
     },
-  ])
+  ]
+  await db.insert(messageTable).values(messages)
 }
 
 export async function getPersonalChats(userId: string) {
@@ -98,7 +114,6 @@ export async function getOrganizationRootChats(userId: string, organizationId: s
   return chats
 }
 
-// Cross-entity helpers (DB access centralized here)
 export async function fetchSpaceByIdBasic(spaceId: string) {
   const [space] = await db
     .select({
@@ -155,7 +170,7 @@ export async function createChat(params: {
   spaceId?: string
   organizationId?: string
   title?: string
-  metadata?: Record<string, any>
+  metadata?: ChatMetadata
 }) {
   const { id, userId, spaceId, organizationId, title, metadata } = params
   const now = new Date()
@@ -182,7 +197,7 @@ export async function updateChat(
   chatId: string,
   updates: {
     title?: string
-    metadata?: Record<string, any>
+    metadata?: ChatMetadata
   },
 ) {
   const now = new Date()

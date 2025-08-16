@@ -29,14 +29,6 @@ export type SerializedAutocompleteNode = Spread<
 >
 
 export class AutocompleteNode extends DecoratorNode<JSX.Element | null> {
-  /**
-   * A unique uuid is generated for each session and assigned to the instance.
-   * This helps to:
-   * - Ensures max one Autocomplete node per session.
-   * - Ensure that when collaboration is enabled, this node is not shown in
-   *   other sessions.
-   * See https://github.com/facebook/lexical/blob/master/packages/lexical-playground/src/plugins/AutocompletePlugin/index.tsx#L39
-   */
   __uuid: string
 
   static clone(node: AutocompleteNode): AutocompleteNode {
@@ -66,15 +58,15 @@ export class AutocompleteNode extends DecoratorNode<JSX.Element | null> {
     this.__uuid = uuid
   }
 
-  updateDOM(prevNode: unknown, dom: HTMLElement, config: EditorConfig): boolean {
+  updateDOM(_prevNode: unknown, _dom: HTMLElement, _config: EditorConfig): boolean {
     return false
   }
 
-  createDOM(config: EditorConfig): HTMLElement {
+  createDOM(_config: EditorConfig): HTMLElement {
     return document.createElement('span')
   }
 
-  decorate(editor: LexicalEditor, config: EditorConfig): JSX.Element | null {
+  decorate(_editor: LexicalEditor, config: EditorConfig): JSX.Element | null {
     if (this.__uuid !== UUID) {
       return null
     }

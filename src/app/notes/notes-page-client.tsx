@@ -14,9 +14,9 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { useCreateNoteMutation } from '@/mutations/note'
 import { useKeepPrevious } from '@/hooks/use-keep-previous'
 import { queryKeys } from '@/lib/query-keys'
+import { useCreateNoteMutation } from '@/mutations/note'
 import { noteService } from '@/services/note'
 import { NotesClient } from './notes-client'
 

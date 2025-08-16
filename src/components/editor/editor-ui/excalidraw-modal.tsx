@@ -1,16 +1,15 @@
-import type {
-  AppState,
-  BinaryFiles,
-  ExcalidrawImperativeAPI,
-  ExcalidrawInitialDataState,
-} from '@excalidraw/excalidraw/types/types'
+type AppState = any
+type BinaryFiles = any
+type ExcalidrawImperativeAPI = any
+type ExcalidrawInitialDataState = any
+
 import { DialogTrigger } from '@radix-ui/react-dialog'
 import dynamic from 'next/dynamic'
 import * as React from 'react'
 import { type JSX, type ReactElement, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogClose, DialogContent, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogClose, DialogContent } from '@/components/ui/dialog'
 
 const Excalidraw = dynamic(() => import('@/components/editor/editor-ui/excalidraw'), { ssr: false })
 
@@ -111,7 +110,7 @@ export function ExcalidrawModal({
   }, [elements, files, onDelete])
 
   const save = () => {
-    if (elements && elements.filter((el) => !el.isDeleted).length > 0) {
+    if (elements && elements.filter((el: any) => !el.isDeleted).length > 0) {
       const appState = excalidrawAPI?.getAppState()
       const partialState: Partial<AppState> = {
         exportBackground: appState?.exportBackground,
@@ -130,10 +129,6 @@ export function ExcalidrawModal({
     } else {
       onDelete()
     }
-  }
-
-  const discard = () => {
-    setDiscardModalOpen(true)
   }
 
   function ShowDiscardDialog(): JSX.Element {

@@ -31,7 +31,6 @@ import {
 import * as React from 'react'
 import { type JSX, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
-// import brokenImage from '@/registry/new-york-v4/editor/images/image-broken.svg';
 import { ContentEditable } from '@/components/editor/editor-ui/content-editable'
 import { ImageResizer } from '@/components/editor/editor-ui/image-resizer'
 import { $isImageNode } from '@/components/editor/nodes/image-node'
@@ -136,7 +135,7 @@ export default function ImageComponent({
   const buttonRef = useRef<HTMLButtonElement | null>(null)
   const [isSelected, setSelected, clearSelection] = useLexicalNodeSelection(nodeKey)
   const [isResizing, setIsResizing] = useState<boolean>(false)
-  const { isCollabActive } = useCollaborationContext()
+  const { isCollabActive: _isCollabActive } = useCollaborationContext()
   const [editor] = useLexicalComposerContext()
   const [selection, setSelection] = useState<BaseSelection | null>(null)
   const activeEditorRef = useRef<LexicalEditor | null>(null)
@@ -172,7 +171,6 @@ export default function ImageComponent({
         latestSelection.getNodes().length === 1
       ) {
         if (showCaption) {
-          // Move focus into nested editor
           $setSelection(null)
           event.preventDefault()
           caption.focus()
@@ -268,8 +266,6 @@ export default function ImageComponent({
         DRAGSTART_COMMAND,
         (event) => {
           if (event.target === imageRef.current) {
-            // TODO This is just a temporary workaround for FF to behave like other browsers.
-            // Ideally, this handles drag & drop too (and all browsers).
             event.preventDefault()
             return true
           }
@@ -314,10 +310,10 @@ export default function ImageComponent({
   }
 
   const onResizeEnd = (nextWidth: 'inherit' | number, nextHeight: 'inherit' | number) => {
-    // Delay hiding the resize bars for click case
+    const RESIZE_UI_HIDE_DELAY = 200
     setTimeout(() => {
       setIsResizing(false)
-    }, 200)
+    }, RESIZE_UI_HIDE_DELAY)
 
     editor.update(() => {
       const node = $getNodeByKey(nodeKey)

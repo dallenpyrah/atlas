@@ -35,42 +35,44 @@ function getMessageText(message: UIMessage): string {
   )
 }
 
-function convertToToolPart(part: any): ToolPart | null {
-  if (part.type === 'tool-call') {
-    return {
-      type: part.toolName || 'unknown',
-      state: 'input-available',
-      input: part.args || {},
-      toolCallId: part.toolCallId,
-    }
-  } else if (part.type === 'tool-result') {
-    return {
-      type: part.toolName || 'unknown',
-      state: part.isError ? 'output-error' : 'output-available',
-      input: {},
-      output: part.isError ? undefined : part.result,
-      errorText: part.isError
-        ? typeof part.result === 'string'
-          ? part.result
-          : 'Tool execution failed'
-        : undefined,
-      toolCallId: part.toolCallId,
-    }
-  } else if (
+type ToolMessagePart = UIMessagePart<UIDataTypes, UITools> & {
+  state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error'
+  input?: Record<string, unknown>
+  output?: Record<string, unknown>
+  errorText?: string
+  toolCallId: string
+}
+
+function extractToolNameFromType(type: string): string {
+  return type.replace('tool-', '')
+}
+
+function isValidToolPart(part: UIMessagePart<UIDataTypes, UITools>): boolean {
+  return (
     part.type?.startsWith('tool-') &&
-    part.type !== 'tool-call' &&
-    part.type !== 'tool-result'
-  ) {
-    return {
-      type: part.type.replace('tool-', ''),
-      state: part.state || 'input-available',
-      input: part.input || {},
-      output: part.output,
-      errorText: part.errorText,
-      toolCallId: part.toolCallId,
-    }
+    'toolCallId' in part &&
+    typeof part.toolCallId === 'string' &&
+    'state' in part
+  )
+}
+
+function createToolPartFromMessagePart(part: ToolMessagePart): ToolPart {
+  return {
+    type: extractToolNameFromType(part.type),
+    state: part.state,
+    input: part.input || {},
+    output: part.output,
+    errorText: part.errorText,
+    toolCallId: part.toolCallId,
   }
-  return null
+}
+
+function convertToToolPart(part: UIMessagePart<UIDataTypes, UITools>): ToolPart | null {
+  if (!isValidToolPart(part)) {
+    return null
+  }
+
+  return createToolPartFromMessagePart(part as ToolMessagePart)
 }
 
 function renderMessagePart(
@@ -111,14 +113,8 @@ function renderMessagePart(
       ) : null
     }
 
-    case 'tool-call':
-    case 'tool-result':
     default:
-      if (
-        part.type === 'tool-call' ||
-        part.type === 'tool-result' ||
-        part.type?.startsWith('tool-')
-      ) {
+      if (part.type?.startsWith('tool-')) {
         const toolPart = convertToToolPart(part)
         if (toolPart) {
           return (
@@ -310,7 +306,7 @@ function ChatInner({
 
   const handleModelChange = useCallback(
     async (model: string) => {
-      const nextModel = model && model.trim() ? model : 'gpt-5'
+      const nextModel = model?.trim() ? model : 'gpt-5'
       setSelectedModel(nextModel)
       if (actualChatIdRef.current && !isNewChat) {
         try {
@@ -351,7 +347,7 @@ function ChatInner({
     sendMessage({
       text: messageText,
       metadata: {
-        model: selectedModel && selectedModel.trim() ? selectedModel : 'gpt-5',
+        model: selectedModel?.trim() ? selectedModel : 'gpt-5',
         chatId: actualChatIdRef.current,
         userId,
         spaceId: context?.type === 'space' ? context.id : null,
