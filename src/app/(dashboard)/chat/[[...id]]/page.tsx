@@ -1,8 +1,6 @@
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { v4 as uuidv4 } from 'uuid'
-import { AppSidebar } from '@/components/app-sidebar'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarInset } from '@/components/ui/sidebar'
 import { auth } from '@/lib/auth'
 import { Chat } from '../chat'
 import { ChatBreadcrumb } from '../chat-breadcrumb'
@@ -17,7 +15,7 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
   })
 
   if (!session) {
-    redirect('/login')
+    return null
   }
 
   const { id } = await params
@@ -25,12 +23,9 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
   const chatId = id?.[0] || uuidv4()
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <ChatBreadcrumb chatId={chatId} />
-        <Chat chatId={chatId} userId={session.user.id} isNewChat={isNewChat} />
-      </SidebarInset>
-    </SidebarProvider>
+    <SidebarInset>
+      <ChatBreadcrumb chatId={chatId} />
+      <Chat chatId={chatId} userId={session.user.id} isNewChat={isNewChat} />
+    </SidebarInset>
   )
 }

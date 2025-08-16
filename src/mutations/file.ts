@@ -312,7 +312,7 @@ export function useUploadFilesMutation(
 
       const totalUploaded = data.successful.length
       const totalFailed = data.failed.length
-      
+
       if (totalFailed === 0) {
         toast.success(`${totalUploaded} file(s) uploaded successfully`)
       } else if (totalUploaded === 0) {
@@ -320,7 +320,7 @@ export function useUploadFilesMutation(
       } else {
         toast.success(`${totalUploaded} file(s) uploaded successfully, ${totalFailed} failed`)
       }
-      
+
       options?.onSuccess?.(data, vars, ctx)
     },
   })

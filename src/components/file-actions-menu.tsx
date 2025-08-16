@@ -1,7 +1,8 @@
 'use client'
 
-import { Edit2, MoreHorizontal, Trash2, Upload, FolderPlus, FolderOpen } from 'lucide-react'
+import { Edit2, FolderOpen, FolderPlus, MoreHorizontal, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
+import type { FileRecord } from '@/app/api/files/utils'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -12,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { FileRecord } from '@/app/api/files/utils'
 
 interface FileActionsMenuProps {
   file: FileRecord
@@ -38,7 +38,7 @@ export function FileActionsMenu({
   const isFolder = file.metadata?.isFolder || false
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
@@ -47,7 +47,7 @@ export function FileActionsMenu({
               size="icon"
               aria-label="File actions"
               title="More actions"
-              className={`group size-7 p-0 text-muted-foreground hover:text-foreground rounded-sm ${className ?? ''}`}
+              className={`relative size-7 p-0 text-muted-foreground hover:text-foreground rounded-sm ${className ?? ''}`}
               onMouseDown={(e) => {
                 if (isInTreeView) {
                   e.preventDefault()
@@ -57,7 +57,7 @@ export function FileActionsMenu({
                 e.stopPropagation()
               }}
             >
-              <MoreHorizontal className="size-4 transition-colors group-hover:text-foreground" />
+              <MoreHorizontal className="size-4 transition-colors" />
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -65,34 +65,38 @@ export function FileActionsMenu({
           Actions
         </TooltipContent>
       </Tooltip>
-      <DropdownMenuContent align="end" side={isInTreeView ? 'right' : 'right'} className="w-40">
+      <DropdownMenuContent
+        align={isInTreeView ? 'start' : 'end'}
+        alignOffset={isInTreeView ? 0 : 0}
+        side={isInTreeView ? 'right' : 'bottom'}
+        sideOffset={8}
+        className="w-40 z-50"
+      >
         <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
           Actions
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {isFolder && (
           <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault()
+            onSelect={() => {
+              onOpenClick?.()
             }}
             onClick={(e) => {
               e.stopPropagation()
-              onOpenClick?.()
             }}
           >
             <FolderOpen className="size-4" />
             Open Folder
           </DropdownMenuItem>
         )}
-        
+
         <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault()
+          onSelect={() => {
+            onEditClick?.()
           }}
           onClick={(e) => {
             e.stopPropagation()
-            onEditClick?.()
           }}
         >
           <Edit2 className="size-4" />
@@ -102,12 +106,11 @@ export function FileActionsMenu({
         {isFolder && (
           <>
             <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault()
+              onSelect={() => {
+                onUploadClick?.()
               }}
               onClick={(e) => {
                 e.stopPropagation()
-                onUploadClick?.()
               }}
             >
               <Upload className="size-4" />
@@ -115,12 +118,11 @@ export function FileActionsMenu({
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault()
+              onSelect={() => {
+                onNewFolderClick?.()
               }}
               onClick={(e) => {
                 e.stopPropagation()
-                onNewFolderClick?.()
               }}
             >
               <FolderPlus className="size-4" />
@@ -131,12 +133,11 @@ export function FileActionsMenu({
 
         <DropdownMenuItem
           variant="destructive"
-          onSelect={(e) => {
-            e.preventDefault()
+          onSelect={() => {
+            onDeleteClick?.()
           }}
           onClick={(e) => {
             e.stopPropagation()
-            onDeleteClick?.()
           }}
         >
           <Trash2 className="size-4" />

@@ -15,6 +15,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCreateFolderMutation } from '@/mutations/file'
+import { useKeepPrevious } from '@/hooks/use-keep-previous'
+import { queryKeys } from '@/lib/query-keys'
+import { fileService } from '@/services/file'
 import { useCurrentUser } from '@/queries/auth'
 
 interface CreateFolderDialogProps {
@@ -32,12 +35,33 @@ export function CreateFolderDialog({
   const [folderName, setFolderName] = useState('')
   const { data: session } = useCurrentUser()
   const { mutateAsync: createFolder, isPending } = useCreateFolderMutation()
+  const { data: siblingItems } = useKeepPrevious({
+    queryKey:
+      currentFolderId
+        ? queryKeys.files.folderContents(currentFolderId, { spaceId, organizationId })
+        : queryKeys.files.list({ spaceId, organizationId, folderId: null }),
+    queryFn: () =>
+      currentFolderId
+        ? fileService.getFolderContents(currentFolderId, { spaceId, organizationId })
+        : fileService.listFiles({ spaceId, organizationId, folderId: null }),
+  })
+
+  const siblingFolderNames = (siblingItems || [])
+    .filter((i) => i.contentType === 'folder')
+    .map((f) => (f.filename || '').toLowerCase())
 
   const handleCreate = async () => {
     if (!session?.user || !folderName.trim()) return
 
+    const normalized = folderName.trim().toLowerCase()
+
+    // prevent duplicate folders (case-insensitive) within the same parent
+    if (siblingFolderNames.includes(normalized)) {
+      return
+    }
+
     await createFolder({
-      name: folderName.trim(),
+      name: normalized,
       parentId: currentFolderId || undefined,
       spaceId,
       organizationId,
@@ -74,13 +98,28 @@ export function CreateFolderDialog({
                 }
               }}
             />
+            {folderName.trim() && folderName !== folderName.trim().toLowerCase() && (
+              <p className="text-xs text-muted-foreground">
+                Will be created as: <span className="font-mono">{folderName.trim().toLowerCase()}</span>
+              </p>
+            )}
+            {folderName.trim() && siblingFolderNames.includes(folderName.trim().toLowerCase()) && (
+              <p className="text-xs text-destructive">A folder with this name already exists.</p>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={isPending || !folderName.trim()}>
+          <Button
+            onClick={handleCreate}
+            disabled={
+              isPending ||
+              !folderName.trim() ||
+              siblingFolderNames.includes(folderName.trim().toLowerCase())
+            }
+          >
             {isPending ? 'Creating...' : 'Create Folder'}
           </Button>
         </DialogFooter>

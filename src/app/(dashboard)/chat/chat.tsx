@@ -14,10 +14,10 @@ import { PromptInput, PromptInputActions, PromptInputTextarea } from '@/componen
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ui/reasoning'
 import { ScrollButton } from '@/components/ui/scroll-button'
 import { Tool, type ToolPart } from '@/components/ui/tool'
-import { cn } from '@/lib/utils'
-import { useCreateChatMutation, useUpdateChatMutation } from '@/mutations/chat'
 import { useKeepPrevious } from '@/hooks/use-keep-previous'
 import { queryKeys } from '@/lib/query-keys'
+import { cn } from '@/lib/utils'
+import { useCreateChatMutation, useUpdateChatMutation } from '@/mutations/chat'
 import { chatService } from '@/services/chat'
 
 type MessageComponentProps = {

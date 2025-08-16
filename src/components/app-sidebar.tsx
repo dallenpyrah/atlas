@@ -12,11 +12,13 @@ import {
 } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
+import type { FileRecord } from '@/app/api/files/utils'
 import { ChatHistoryItem } from '@/components/chat-history-item'
 import { CommandChatItem } from '@/components/command-chat-item'
 import { CommandNoteItem } from '@/components/command-note-item'
 import { ContextSwitcher } from '@/components/context-switcher'
 import { FileTree } from '@/components/file-tree'
+import { FilePreviewDialog } from '@/components/file-preview-dialog'
 import { NavUser } from '@/components/nav-user'
 import { NoteHistoryItem } from '@/components/note-history-item'
 import { OysterBadge } from '@/components/oyster-badge'
@@ -51,10 +53,10 @@ import {
   SidebarMenuSub,
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useDeleteChatMutation } from '@/mutations/chat'
-import { useCreateNoteMutation, useDeleteNoteMutation } from '@/mutations/note'
 import { useKeepPrevious } from '@/hooks/use-keep-previous'
 import { queryKeys } from '@/lib/query-keys'
+import { useDeleteChatMutation } from '@/mutations/chat'
+import { useCreateNoteMutation, useDeleteNoteMutation } from '@/mutations/note'
 import { chatService } from '@/services/chat'
 import { noteService } from '@/services/note'
 
@@ -291,6 +293,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const [isSearchOpen, setIsSearchOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState(false)
+  const [previewFile, setPreviewFile] = React.useState<FileRecord | null>(null)
+
+  const openPreviewForFile = React.useCallback((file: FileRecord) => {
+    setPreviewFile(file)
+    setIsPreviewOpen(true)
+  }, [])
 
   const selectedSpaceId: string | null = context?.type === 'space' ? context.id : null
   const selectedOrgId: string | null = context?.type === 'organization' ? context.id : null
@@ -398,7 +407,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
           <SidebarGroup>
             <SidebarMenu>
-              <Collapsible defaultOpen={true} asChild>
+              <Collapsible defaultOpen={false} asChild>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="History">
                     <CollapsibleTrigger asChild>
@@ -427,7 +436,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
-              <Collapsible defaultOpen={true} asChild>
+              <Collapsible defaultOpen={false} asChild>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Notes">
                     <CollapsibleTrigger asChild>
@@ -478,7 +487,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
-              <Collapsible defaultOpen={true} asChild>
+              <Collapsible defaultOpen={false} asChild>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Files">
                     <CollapsibleTrigger asChild>
@@ -496,7 +505,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="pl-2">
-                      <FileTree />
+                      <FileTree onFileClick={openPreviewForFile} />
                     </div>
                   </CollapsibleContent>
                 </SidebarMenuItem>
@@ -508,6 +517,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <NavUser />
         </SidebarFooter>
       </Sidebar>
+      <FilePreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        file={previewFile ?? undefined}
+      />
       <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
         <CommandInput
           placeholder="Search chats and notes..."
@@ -516,7 +530,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading={search ? "Chats" : "Recent Chats"}>
+          <CommandGroup heading={search ? 'Chats' : 'Recent Chats'}>
             {(searchResults ?? []).map((chat) => (
               <CommandChatItem
                 key={chat.id}
@@ -526,7 +540,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               />
             ))}
           </CommandGroup>
-          <CommandGroup heading={search ? "Notes" : "Recent Notes"}>
+          <CommandGroup heading={search ? 'Notes' : 'Recent Notes'}>
             {(noteSearchResults ?? []).map((note) => (
               <CommandNoteItem
                 key={note.id}

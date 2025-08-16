@@ -4,8 +4,8 @@ export { InstantNavLayout } from './instant-nav-layout'
 export { InstantPrefetchLink } from './instant-prefetch-link'
 export { PageDataProvider, usePageData } from './page-data-provider'
 export {
-  InstantNavUsageExample,
-  SpacePageWithSuspense,
   InstantNavigationList,
+  InstantNavUsageExample,
   SpaceDashboardContent,
+  SpacePageWithSuspense,
 } from './usage-example'
